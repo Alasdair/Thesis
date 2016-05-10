@@ -1,5 +1,5 @@
-theory Verification
-  imports Language
+theory Verification2
+  imports Language2
 begin
 
 record store =
@@ -167,7 +167,7 @@ next
 qed
 
 definition test :: "bool_expr \<Rightarrow> program" where
-  "test P \<equiv> Language.test (eval_bool_expr P)"
+  "test P \<equiv> Language2.test (eval_bool_expr P)"
 
 definition sequential_composition :: "program \<Rightarrow> program \<Rightarrow> program" (infixr ";" 52) where
   "X; Y \<equiv> X\<cdot>Y"
@@ -235,7 +235,7 @@ lemma guar_mono: "G\<^sup>* \<subseteq> G'\<^sup>* \<Longrightarrow> guar G \<su
   by (auto simp add: guar_def) (metis contra_subsetD)
 
 lemma evaluate_tests [simp]: "test P \<subseteq> test Q \<longleftrightarrow> (\<forall>s. eval_bool_expr P s \<longrightarrow> eval_bool_expr Q s)"
-  by (auto simp add: test_def Language.test_def)
+  by (auto simp add: test_def Language2.test_def)
 
 lemma preimp_zero [simp]: "({} \<rightharpoondown> x) = UNIV"
   by (simp add: preimp_def)
@@ -282,9 +282,12 @@ proof (simp only: subset_iff, clarify)
     fix \<tau> assume "eval_bool_expr (Q[E\<bar>v]) \<tau>"
 
     have "test Q \<noteq> {}"
-      by (auto simp add: test_def Language.test_def) (metis `eval_bool_expr (Q[E\<bar>v]) \<tau>` assign_eval_bool)
+      by (auto simp add: test_def Language2.test_def) (metis `eval_bool_expr (Q[E\<bar>v]) \<tau>` assign_eval_bool)
     then obtain Q_inhab where "Q_inhab \<in> test Q"
       by (metis all_not_in_conv)
+
+    hence "lfinite Q_inhab"
+      by (auto simp add: test_def Language2.test_def)
 
     show "(\<tau>, \<tau>) # (\<sigma>, \<sigma>') # sng (\<sigma>', \<sigma>') \<in> preserve (Q[E\<bar>v]) \<rhd> FIN \<cdot> test Q \<inter> guar ?G"
     proof (cases "(\<tau>, \<sigma>) \<in> (preserve (Q[E\<bar>v]))\<^sup>*")
@@ -298,7 +301,7 @@ proof (simp only: subset_iff, clarify)
         apply (rule FIN_test1)
         apply (rule FIN_test1)
         apply (rule FIN_test2)
-        apply (simp add: test_def Language.test_def)
+        apply (simp add: test_def Language2.test_def)
         apply (metis \<sigma>'_assign `eval_bool_expr (Q[E\<bar>v]) \<sigma>` assign_eval_bool)
         apply (rule r_into_rtrancl )
         by (simp add: \<sigma>'_assign `eval_bool_expr (Q[E\<bar>v]) \<sigma>`)
@@ -316,6 +319,7 @@ proof (simp only: subset_iff, clarify)
         apply (rule_tac x = \<sigma> in exI)
         apply (simp_all add: \<tau>\<sigma>)
         apply auto
+        apply (simp add: \<open>lfinite Q_inhab\<close>)
         apply (metis FIN_def FIN_test1 LCons_in_l_prod `Q_inhab \<in> test Q` lfinite_LCons lfinite_code(1) mem_Collect_eq)
         apply (rule subsetD[of "test Q"])
         by (simp_all add: test_guar `Q_inhab \<in> test Q`)
@@ -326,7 +330,7 @@ proof (simp only: subset_iff, clarify)
     apply (subst fin_l_prod)
     by (auto simp add: fin_l_prod FIN_def)
   thus "w \<in> test (Q[E\<bar>v]) \<rightharpoondown> (preserve (Q[E\<bar>v]) \<rhd> FIN \<cdot> test Q \<inter> guar ?G)"
-    by (simp only: preimp_elem_var test_def Language.test_def)
+    by (simp only: preimp_elem_var test_def Language2.test_def)
 qed
 
 lemma assignment_rule:
@@ -385,42 +389,61 @@ lemma one_test_pre: "test P \<cdot> X = {(\<sigma>,\<sigma>) # x |\<sigma> x. ev
   apply (subst fin_l_prod)
   apply (metis tests_finite)
   apply (simp add: test_def)
-  apply (auto simp add: Language.test_def)
+  apply (auto simp add: Language2.test_def)
   by (metis lappend_code(1) lappend_code(2))
 
 lemma two_tests_pre: "test P \<cdot> test S \<cdot> X = {(\<sigma>,\<sigma>) # (\<sigma>',\<sigma>') # x |\<sigma> \<sigma>' x. eval_bool_expr P \<sigma> \<and> eval_bool_expr S \<sigma>' \<and> x \<in> X}"
   apply (subst fin_l_prod)
   apply (metis tests_finite)
   apply (subst fin_l_prod)
-  apply (simp add: test_def Language.test_def FIN_def)
+  apply (simp add: test_def Language2.test_def FIN_def)
   apply (metis lfinite_LCons lfinite_code(1) lfinite_lappend)
-  apply (auto simp add: test_def Language.test_def)
+  apply (auto simp add: test_def Language2.test_def)
   by (metis lappend_code(1) lappend_code(2))
 
 lemma rely_cons_eq: "rely R (x # xs) (y # ys) \<Longrightarrow> x = y"
   apply (auto simp add: rely_def)
+  apply (metis (erased, hide_lams) lappend_code(1) lappend_code(2) lhd_LCons llist.exhaust)
   by (metis (erased, hide_lams) lappend_code(1) lappend_code(2) lhd_LCons llist.exhaust)
+
+definition fpres :: "'a llist \<Rightarrow> 'a llist \<Rightarrow> bool" where
+  "fpres x y \<equiv> lfinite x = lfinite y"
+
+lemma rely_fpres_def: "rely R x y \<equiv> (\<exists>z \<sigma> \<sigma>' \<tau> \<tau>' \<tau>'' x' y'. x = z \<frown> ((\<sigma>,\<sigma>') # (\<tau>,\<tau>') # x')
+                                       \<and> y = z \<frown> ((\<sigma>,\<sigma>') # (\<tau>,\<tau>'') # y')
+                                       \<and> (\<sigma>',\<tau>) \<notin> (R\<^sup>*)
+                                       \<and> lfinite z
+                                       \<and> fpres x' y'
+                                       \<and> env (R\<^sup>*) (z \<frown> ((\<sigma>,\<sigma>') # LNil))) \<or> x = y"
+  by (simp add: fpres_def rely_def)
 
 lemma rely_cons_lem: "rely R ((\<gamma>', \<gamma>') # x) ((\<gamma>', \<gamma>') # y) \<Longrightarrow> rely R ((\<gamma>, \<gamma>) # (\<gamma>', \<gamma>') # x) ((\<gamma>, \<gamma>) # (\<gamma>', \<gamma>') # y)"
   apply (cases "(\<gamma>, \<gamma>') \<in> R\<^sup>*")
-  apply (auto simp add: rely_def)
+  apply (auto simp add: rely_fpres_def)
   apply (rule_tac x = "(\<gamma>, \<gamma>) # z" in exI)
   apply (rule_tac x = \<sigma> in exI)
   apply (rule_tac x = \<sigma>' in exI)
   apply (rule_tac x = \<tau> in exI)
+  apply (rule_tac x = \<tau>' in exI)
+  apply (rule_tac x = \<tau>'' in exI)
+  apply (rule_tac x = x' in exI)
   apply (intro conjI)
-  apply simp_all
-  apply metis
-  apply metis
+  apply simp
+  apply (rule_tac x = y' in exI)
+  apply simp
   apply (metis env_lem1 prod.sel(1) prod.sel(2))
   apply (rule_tac x = LNil in exI)
   apply (rule_tac x = \<gamma> in exI)
   apply (rule_tac x = \<gamma> in exI)
   apply (rule_tac x = \<gamma>' in exI)
+  apply (rule_tac x = \<gamma>' in exI)
+  apply (rule_tac x = \<gamma>' in exI)
+  apply (rule_tac x = x in exI)
   apply simp_all
-  apply (intro conjI)
-  apply metis
-  by metis
+  apply (rule_tac x = y in exI)
+  apply simp
+  apply (simp add: fpres_def)
+  by (metis lfinite_code(2) lfinite_lappend)
 
 lemma stutter_1: "x \<in> FIN \<cdot> test Q \<inter> guar G \<Longrightarrow> rely R x ((\<sigma>', \<sigma>') # t') \<Longrightarrow> rely R ((\<sigma>, \<sigma>) # x) ((\<sigma>, \<sigma>) # (\<sigma>', \<sigma>') # t')"
   apply (cases x)
@@ -471,7 +494,7 @@ lemma double_test2: "test P \<rightharpoondown> (R \<rhd> FIN \<cdot> test Q \<i
   by (metis double_test1)
 
 lemma mumble_lem1': "(\<sigma>',\<sigma>) \<in> R\<^sup>* \<Longrightarrow> rely R ((\<sigma>', \<sigma>') # x) ((\<sigma>', \<sigma>') # (\<sigma>, \<sigma>) # y) \<Longrightarrow> rely R x ((\<sigma>, \<sigma>) # y)"
-  apply (simp add: rely_def)
+  apply (simp add: rely_fpres_def)
   apply auto
   apply (subgoal_tac "\<exists>z'. z = (\<sigma>', \<sigma>') # z'")
   apply (erule exE)+
@@ -480,10 +503,11 @@ lemma mumble_lem1': "(\<sigma>',\<sigma>) \<in> R\<^sup>* \<Longrightarrow> rely
   apply (rule_tac x = \<sigma>'' in exI)
   apply (rule_tac x = \<sigma>''' in exI)
   apply (rule_tac x = \<tau> in exI)
-  apply (intro conjI)
-  apply metis
-  apply metis
+  apply (rule_tac x = \<tau>' in exI)
+  apply (rule_tac x = \<tau>'' in exI)
+  apply (rule_tac x = x' in exI)
   apply simp
+  apply (rule_tac x = y' in exI)
   apply simp
   apply (metis env_tl)
   apply (subgoal_tac "z = LNil \<or> (\<exists>\<gamma> \<gamma>' z''. z = (\<gamma>, \<gamma>') # z'')")
@@ -504,12 +528,12 @@ lemma mumble_lem1: "(\<sigma>',\<sigma>) \<in> R\<^sup>*  \<Longrightarrow> x \<
   by (smt LNil_eq_lappend_iff llist.distinct(1) rely_def)
 
 lemma double_tests: "test P \<cdot> test Q = {(\<sigma>, \<sigma>) # (\<sigma>', \<sigma>') # LNil |\<sigma> \<sigma>'. eval_bool_expr P \<sigma> \<and> eval_bool_expr Q \<sigma>'}"
-  apply (auto simp add: test_def Language.test_def l_prod_def)
+  apply (auto simp add: test_def Language2.test_def l_prod_def)
   apply (metis lappend_code(1) lappend_code(2) lfinite_LCons lfinite_code(1))
   by (metis lappend_code(1) lappend_code(2) lfinite_LCons lfinite_code(1))
 
 lemma triple_tests: "test P \<cdot> test Q \<cdot> test S = {(\<sigma>, \<sigma>) # (\<sigma>', \<sigma>') # (\<sigma>'', \<sigma>'') # LNil |\<sigma> \<sigma>' \<sigma>''. eval_bool_expr P \<sigma> \<and> eval_bool_expr Q \<sigma>' \<and> eval_bool_expr S \<sigma>''}"
-  apply (auto simp add: test_def Language.test_def l_prod_def)
+  apply (auto simp add: test_def Language2.test_def l_prod_def)
   by (metis lappend_code(1) lappend_code(2) lfinite_LCons lfinite_code(1))+
 
 lemma preimp_2_l_prod: "Z \<subseteq> FIN \<Longrightarrow> Y \<subseteq> FIN \<Longrightarrow> X \<le> Y \<rightharpoondown> Z \<rightharpoondown> W \<longleftrightarrow> X \<le> Z \<cdot> Y \<rightharpoondown> W"
@@ -536,9 +560,9 @@ proof -
   from `test Q \<noteq> {}`
   obtain \<sigma>''
   where "eval_bool_expr Q \<sigma>''"
-    by (auto simp add: test_def Language.test_def)
+    by (auto simp add: test_def Language2.test_def)
   hence "sng (\<sigma>'', \<sigma>'') \<in> test Q"
-    by (auto simp add: test_def Language.test_def)
+    by (auto simp add: test_def Language2.test_def)
 
   {
     assume "(\<sigma>, \<sigma>') \<notin> (preserve P)\<^sup>*"
@@ -553,7 +577,9 @@ proof -
       apply (rule_tac x = \<sigma> in exI) apply (rule_tac x = \<sigma> in exI)
       apply (rule_tac x = \<sigma>' in exI)
       apply simp
-      by (metis FIN_test1 FIN_test2 Int_iff `sng (\<sigma>'', \<sigma>'') \<in> test Q` guar_LCons_eq guar_singleton rtrancl.rtrancl_refl)
+      prefer 2
+      apply (metis FIN_test1 FIN_test2 Int_iff `sng (\<sigma>'', \<sigma>'') \<in> test Q` guar_LCons_eq guar_singleton rtrancl.rtrancl_refl)
+      sorry
 
     hence "t \<in> R \<rhd> FIN \<cdot> test Q \<inter> guar G"
       by (metis t_def)
@@ -564,7 +590,7 @@ proof -
 
     from preservation[OF `eval_bool_expr P \<sigma>` this] and `eval_bool_expr B \<sigma>'`
     have "sng (\<sigma>', \<sigma>') \<in> test (P \<otimes> B)"
-      by (simp add: test_def Language.test_def)
+      by (simp add: test_def Language2.test_def)
 
     hence "(\<sigma>', \<sigma>') # t' \<in> test (P \<otimes> B) \<cdot> X"
       by (metis LCons_in_l_prod `t' \<in> X`)
@@ -593,7 +619,7 @@ lemma post_ltl: "llength x > 1 \<Longrightarrow> x \<in> \<F> \<cdot> \<T> Q \<L
   apply (drule llength_ge_1)
   apply (erule exE)+
   apply simp
-  apply (auto simp add: FIN_def l_prod_def test_def Language.test_def)
+  apply (auto simp add: FIN_def l_prod_def test_def Language2.test_def)
   by (metis lappend_code(1) lfinite.simps llist.distinct(1) llist.sel(3) ltl_lappend)
 
 lemma [simp]: "xa = x21 # x22 \<frown> ((\<sigma>', \<sigma>'') # (\<tau>, \<tau>') # x') \<Longrightarrow> z = x21 # x22 \<Longrightarrow> llength x22 + eSuc (eSuc (llength x')) \<noteq> 0"
@@ -636,22 +662,22 @@ proof -
   from `t \<in> test (P \<otimes> B) \<cdot> X`
   obtain \<sigma> t'
   where t_def: "t = (\<sigma>, \<sigma>) # t'" and "eval_bool_expr P \<sigma>" and "eval_bool_expr B \<sigma>" and "t' \<in> X"
-    by (auto simp add: test_def Language.test_def l_prod_def)
+    by (auto simp add: test_def Language2.test_def l_prod_def)
 
   from `test Q \<noteq> {}`
   obtain \<sigma>'
   where "eval_bool_expr Q \<sigma>'"
-    by (auto simp add: test_def Language.test_def)
+    by (auto simp add: test_def Language2.test_def)
   hence "sng (\<sigma>', \<sigma>') \<in> test Q"
-    by (auto simp add: test_def Language.test_def)
+    by (auto simp add: test_def Language2.test_def)
 
   from `eval_bool_expr P \<sigma>` and `eval_bool_expr B \<sigma>` and `t' \<in> X`
   have "(\<sigma>, \<sigma>) # (\<sigma>, \<sigma>) # t' \<in> test P \<cdot> test B \<cdot> X"
     apply (simp only: l_prod_assoc)
     apply (rule LCons_in_l_prod)
-    apply (simp add: test_def Language.test_def)
+    apply (simp add: test_def Language2.test_def)
     apply (rule LCons_in_l_prod)
-    apply (simp add: test_def Language.test_def)
+    apply (simp add: test_def Language2.test_def)
     by simp
 
   hence "(\<sigma>, \<sigma>) # (\<sigma>, \<sigma>) # t' \<in> R \<rhd> FIN \<cdot> test Q \<inter> guar G"
@@ -668,7 +694,7 @@ lemma [simp]: "\<F> \<cdot> {} = {}"
   by (auto simp add: l_prod_def FIN_def)
 
 lemma [simp]: "\<T> P \<cdot> {} = {}"
-  by (auto simp add: l_prod_def test_def Language.test_def)
+  by (auto simp add: l_prod_def test_def Language2.test_def)
 
 lemma [simp]: "R \<rhd> {} = {}"
   by (auto simp add: Rely_def)
@@ -743,14 +769,14 @@ proof (auto simp add: subset_iff)
     by (simp add: two_tests_pre) metis
 
   from `eval_bool_expr B \<sigma>'` and assms(1) have "\<not> eval_bool_expr P \<sigma>'"
-    by (auto simp add: Language.test_def test_def)
+    by (auto simp add: Language2.test_def test_def)
 
   from `test Q \<noteq> {}`
   obtain \<sigma>''
   where "eval_bool_expr Q \<sigma>''"
-    by (auto simp add: Language.test_def test_def)
+    by (auto simp add: Language2.test_def test_def)
   hence "sng (\<sigma>'', \<sigma>'') \<in> test Q"
-    by (auto simp add: Language.test_def test_def)
+    by (auto simp add: Language2.test_def test_def)
 
   hence "(\<sigma>, \<sigma>) # (\<sigma>', \<sigma>') # t' \<in> R \<rhd> FIN \<cdot> test Q \<inter> guar G"
     apply (auto simp add: Rely_def)
@@ -760,10 +786,18 @@ proof (auto simp add: subset_iff)
     apply (rule_tac x = LNil in exI)
     apply (rule_tac x = \<sigma> in exI) apply (rule_tac x = \<sigma> in exI)
     apply (rule_tac x = \<sigma>' in exI)
+    apply (rule_tac x = \<sigma>' in exI)
+    apply (rule_tac x = \<sigma>' in exI)
+    apply (rule_tac x = "sng (\<sigma>'', \<sigma>'')" in exI)
     apply (intro conjI)
+    apply simp
+    apply (rule_tac x = "t'" in exI)
     apply simp_all
+    apply (intro conjI)
     apply (metis `\<not> eval_bool_expr P \<sigma>'` `eval_bool_expr P \<sigma>` preservation)
-    by (metis FIN_test1 FIN_test2)
+    prefer 2
+    apply (metis FIN_test1 FIN_test2)
+    sorry
 
   thus "t \<in> R \<rhd> FIN \<cdot> test Q \<inter> guar G"
     by (metis `t = (\<sigma>, \<sigma>) # (\<sigma>', \<sigma>') # t'`)
@@ -776,10 +810,10 @@ lemma zero_rule: "R, G \<turnstile> \<lbrace>P\<rbrace> {} \<lbrace>Q\<rbrace>"
   by (simp add: quintuple_def)
 
 lemma conj_empty: "test (P \<otimes> B) = {} \<Longrightarrow> test (P \<otimes> (BNot B)) = test P"
-  by (auto simp add: test_def Language.test_def)
+  by (auto simp add: test_def Language2.test_def)
 
 lemma conj_empty2: "test (P \<otimes> BNot B) = {} \<Longrightarrow> test (P \<otimes> B) = test P"
-  by (auto simp add: test_def Language.test_def)
+  by (auto simp add: test_def Language2.test_def)
 
 lemma test_to_precondition_var: "test (P \<otimes> B) \<noteq> {} \<Longrightarrow> R\<^sup>* \<subseteq> (preserve P)\<^sup>* \<Longrightarrow> R, G \<turnstile> \<lbrace>P \<otimes> B\<rbrace> X \<lbrace>Q\<rbrace> \<Longrightarrow> R, G \<turnstile> \<lbrace>P\<rbrace> test B \<cdot> X \<lbrace>Q\<rbrace>"
   apply (simp add: quintuple_def)
@@ -805,10 +839,10 @@ lemma FIN_l_prod_ex: "z \<in> FIN \<cdot> X \<Longrightarrow> \<exists>z'. z' \<
   by (auto simp add: FIN_def l_prod_def)
 
 lemma test_conj_leq1: "test (P \<otimes> B) \<subseteq> test P"
-  by (auto simp add: test_def Language.test_def)
+  by (auto simp add: test_def Language2.test_def)
 
 lemma test_conj_leq2: "test (B \<otimes> P) \<subseteq> test P"
-  by (auto simp add: test_def Language.test_def)
+  by (auto simp add: test_def Language2.test_def)
 
 lemma test_conj_2:
   assumes "\<And>t. t \<in> test P \<cdot> X \<Longrightarrow> t \<in> R \<rhd> FIN \<cdot> test Q \<inter> guar G"
@@ -824,7 +858,7 @@ proof -
   hence "(\<sigma>, \<sigma>) # t' \<in> test P \<cdot> X"
     apply -
     apply (rule LCons_in_l_prod)
-    by (auto simp add: test_def Language.test_def)
+    by (auto simp add: test_def Language2.test_def)
 
   hence "(\<sigma>, \<sigma>) # t' \<in> R \<rhd> FIN \<cdot> test Q \<inter> guar G"
     by (metis assms(1))
@@ -832,7 +866,7 @@ proof -
   then obtain \<sigma>'' where "sng (\<sigma>'', \<sigma>'')  \<in> test Q"
     apply (auto simp add: Rely_def)
     apply (drule FIN_l_prod_ex)
-    by (auto simp add: Language.test_def test_def)
+    by (auto simp add: Language2.test_def test_def)
 
   {
     assume "(\<sigma>, \<sigma>') \<notin> (preserve P)\<^sup>*"
@@ -847,7 +881,9 @@ proof -
       apply (rule_tac x = \<sigma> in exI) apply (rule_tac x = \<sigma> in exI)
       apply (rule_tac x = \<sigma>' in exI)
       apply simp
-      by (metis FIN_test1 FIN_test2 Int_iff `sng (\<sigma>'', \<sigma>'') \<in> test Q` guar_LCons_eq guar_singleton rtrancl.rtrancl_refl)
+      prefer 2
+      apply (metis FIN_test1 FIN_test2 Int_iff `sng (\<sigma>'', \<sigma>'') \<in> test Q` guar_LCons_eq guar_singleton rtrancl.rtrancl_refl)
+      sorry
 
     hence "t \<in> R \<rhd> FIN \<cdot> test Q \<inter> guar G"
       by (metis t_def)
@@ -858,7 +894,7 @@ proof -
 
     from preservation[OF `eval_bool_expr P \<sigma>` this] and `eval_bool_expr B \<sigma>'`
     have "sng (\<sigma>', \<sigma>') \<in> test (P \<otimes> B)"
-      by (simp add: test_def Language.test_def)
+      by (simp add: test_def Language2.test_def)
 
     hence "(\<sigma>', \<sigma>') # t' \<in> test (P \<otimes> B) \<cdot> X"
       by (metis LCons_in_l_prod `t' \<in> X`)
@@ -974,7 +1010,7 @@ lemma while_lem1:
 proof -
   from assms(2) obtain \<sigma>''
   where "sng (\<sigma>'', \<sigma>'') \<in> test (BNot P \<otimes> I)"
-    by (smt Collect_empty_eq mem_Collect_eq test_def Language.test_def)
+    by (smt Collect_empty_eq mem_Collect_eq test_def Language2.test_def)
 
   {
     fix t
@@ -994,7 +1030,7 @@ proof -
         by (metis `eval_bool_expr (BNot P) \<sigma>'` eval_bool_expr.simps(4))
 
       hence "sng (\<sigma>', \<sigma>') \<in> test (BNot P \<otimes> I)"
-        by (simp add: test_def Language.test_def)
+        by (simp add: test_def Language2.test_def)
 
       hence "(\<sigma>, \<sigma>) # sng (\<sigma>', \<sigma>') \<in> R \<rhd> FIN \<cdot> test (BNot P \<otimes> I) \<inter> guar G"
         apply (auto simp add: Rely_def)
@@ -1031,7 +1067,7 @@ proof -
 qed
 
 lemma "test P \<noteq> {} \<longleftrightarrow> (\<exists>\<sigma>. eval_bool_expr P \<sigma>)"
-  by (auto simp add: test_def Language.test_def)
+  by (auto simp add: test_def Language2.test_def)
 
 lemma while_rule:
   assumes "R\<^sup>* \<subseteq> (preserve I)\<^sup>*"

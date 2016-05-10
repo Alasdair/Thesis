@@ -60,14 +60,14 @@ lemma  omega_coinduct_eq_var2: "y = x \<cdot> y \<Longrightarrow> y \<le> x\<^su
 text {* Next we strengthen the unfold law to an equation. *}
 
 lemma omega_unfold_var: "z + x \<cdot> x\<^sup>\<omega> \<le> x\<^sup>\<omega> + x\<^sup>\<star> \<cdot> z"
-  by (metis add_lub add_ub1 omega_coinduct omega_unfold_eq)
+  by (simp add: local.omega_coinduct)
 
 text {* We now prove subdistributivity and isotonicity of omega. *}
 
 lemma omega_subdist: "x\<^sup>\<omega> \<le> (x + y)\<^sup>\<omega>"
 proof -
   have "x\<^sup>\<omega> \<le> (x + y) \<cdot> x\<^sup>\<omega>"
-    by (metis add_ub1 mult_isor omega_unfold_eq)
+    by auto
   thus ?thesis
     by (metis omega_coinduct_var2)
 qed
@@ -76,7 +76,7 @@ lemma omega_iso: "x \<le> y \<longrightarrow> x\<^sup>\<omega> \<le> y\<^sup>\<o
   by (metis less_eq_def omega_subdist)
 
 lemma omega_subdist_var: "x\<^sup>\<omega> + y\<^sup>\<omega> \<le> (x + y)\<^sup>\<omega>"
-  by (metis add.commute add_lub omega_subdist)
+  by (simp add: omega_iso)
 
 lemma zero_omega [simp]: "0\<^sup>\<omega> = 0"
   by (metis annil omega_unfold_eq)
@@ -205,7 +205,7 @@ proof (rule antisym)
   have "x\<^sup>\<star> \<cdot> z \<le> (x + y)\<^sup>\<omega>"
     by (metis add.commute assms star_inductl_eq)
   thus "x\<^sup>\<omega> + x\<^sup>\<star> \<cdot> z \<le> (x + y)\<^sup>\<omega>"
-    by (metis add_lub omega_subdist)
+    by (simp add: omega_subdist)
 qed
 
 text {*
@@ -220,7 +220,7 @@ proof (rule antisym)
   have "(x\<^sup>\<omega>)\<^sup>\<star> = 1 + x\<^sup>\<omega> \<cdot> (x\<^sup>\<omega>)\<^sup>\<star>"
     by simp
   also have "... \<le> 1 + x\<^sup>\<omega> \<cdot> \<top>"
-    by (metis add_iso_var eq_refl omega_1 omega_top)
+    using calculation local.boffa_var omega_trans by auto
   thus "(x\<^sup>\<omega>)\<^sup>\<star> \<le> 1 + x\<^sup>\<omega>"
     by (metis calculation omega_top)
   show "1 + x\<^sup>\<omega> \<le> (x\<^sup>\<omega>)\<^sup>\<star>"
@@ -258,7 +258,7 @@ lemma omega_sum_unfold_ind: "(x\<^sup>\<star> \<cdot> y)\<^sup>\<star> \<cdot> x
 lemma wagner_1_gen: "(x \<cdot> y\<^sup>\<star>)\<^sup>\<omega> \<le> (x + y)\<^sup>\<omega>"
 proof -
   have "(x \<cdot> y\<^sup>\<star>)\<^sup>\<omega> \<le> ((x + y) \<cdot> (x + y)\<^sup>\<star>)\<^sup>\<omega>"
-    by (metis add_ub1 add_ub2 mult_isol_var omega_iso star_iso)
+    using local.join.sup.bounded_iff local.join.sup_ge1 local.mult_isol_var local.star_subdist_var omega_iso by presburger
   thus ?thesis
     by (metis wagner_1)
 qed
@@ -270,7 +270,7 @@ proof -
   also have "... \<le> x\<^sup>\<star> \<cdot> (x + y)\<^sup>\<omega>"
     by (metis add.commute mult_isol wagner_1_gen)
   also have "... \<le> (x + y)\<^sup>\<star> \<cdot> (x + y)\<^sup>\<omega>"
-    by (metis add_ub1 mult_isor star_iso)
+    using local.mult_isor local.star_subdist by auto
   thus ?thesis
     by (metis calculation order_trans star_omega_1)
 qed
@@ -287,7 +287,7 @@ proof (rule antisym)
   hence "(x\<^sup>\<star> \<cdot> y)\<^sup>\<star> \<cdot> x\<^sup>\<omega> \<le> (x + y)\<^sup>\<omega>"
     by (metis omega_sum_unfold_ind)
   thus "(x\<^sup>\<star> \<cdot> y)\<^sup>\<omega> + (x\<^sup>\<star> \<cdot> y)\<^sup>\<star> \<cdot> x\<^sup>\<omega> \<le> (x + y)\<^sup>\<omega>"
-    by (metis add_lub wagner_1_var_gen)
+    by (simp add: wagner_1_var_gen)
 qed
 
 text {* The next lemma yields a separation theorem for infinite
@@ -304,7 +304,7 @@ proof (rule antisym)
   also have "(x + y)\<^sup>\<omega> = y\<^sup>\<omega> + y\<^sup>\<star> \<cdot> x \<cdot> (x + y)\<^sup>\<omega>"
     by (metis add.commute omega_sum_unfold)
   moreover have "... \<le> x \<cdot> (x + y)\<^sup>\<star> \<cdot> (x + y)\<^sup>\<omega> + y\<^sup>\<omega>"
-    by (metis add_iso add_lub add_ub2 calculation(1) mult_isor)
+    by (smt abel_semigroup.commute calculation(1) local.add.abel_semigroup_axioms local.combine_common_factor local.join.sup.orderE local.join.sup_ge2)
   moreover have "... \<le> x \<cdot> (x + y)\<^sup>\<omega> + y\<^sup>\<omega>"
     by (metis mult.assoc order_refl star_omega_1)
   thus "(x + y)\<^sup>\<omega> \<le> x\<^sup>\<omega> + x\<^sup>\<star> \<cdot> y\<^sup>\<omega>"
@@ -312,13 +312,13 @@ proof (rule antisym)
   have "x\<^sup>\<omega> \<le> (x + y)\<^sup>\<omega>"
     by (rule omega_subdist)
   moreover have "x\<^sup>\<star> \<cdot> y\<^sup>\<omega> \<le> x\<^sup>\<star> \<cdot> (x + y)\<^sup>\<omega>"
-    by (metis calculation add_ub1 mult_isol)
+    by (metis calculation(2) local.subdistl)
   moreover have"... \<le> (x + y)\<^sup>\<star> \<cdot> (x + y)\<^sup>\<omega>"
-    by (metis add_ub1 star_iso mult_isor)
+     using local.mult_isor local.star_subdist by blast
   moreover have "... = (x + y)\<^sup>\<omega>"
      by (rule star_omega_1)
    thus "x\<^sup>\<omega> + x\<^sup>\<star> \<cdot> y\<^sup>\<omega> \<le> (x + y)\<^sup>\<omega>"
-     by (metis add.commute add_lub calculation mult_isol omega_subdist order_trans star_omega_1)
+     by (metis calculation(4) calculation(5) calculation(6) local.join.sup.boundedI local.order_trans)
 qed
 
 text {* The following theorem by Bachmair and
@@ -330,11 +330,11 @@ lemma bachmair_dershowitz:
 proof
   assume "(x + y)\<^sup>\<omega> = 0"
   show "x\<^sup>\<omega> + y\<^sup>\<omega> = 0"
-    by (metis `(x + y)\<^sup>\<omega> = (0\<Colon>'a)` omega_subdist_var zero_unique)
+    using \<open>(x + y)\<^sup>\<omega> = 0\<close> local.join.bot_unique omega_subdist_var by blast
 next
   assume "x\<^sup>\<omega> + y\<^sup>\<omega> = 0"
   show "(x + y)\<^sup>\<omega> = 0"
-    by (metis `x\<^sup>\<omega> + y\<^sup>\<omega> = (0\<Colon>'a)` assms no_trivial_inverse omega_sum_refine distrib_left star_omega_1)
+    by (metis \<open>x\<^sup>\<omega> + y\<^sup>\<omega> = 0\<close> assms local.add.monoid_axioms local.no_trivial_inverse monoid.left_neutral omega_sum_refine star_omega_1)
 qed
 
 text {*
@@ -362,7 +362,7 @@ proof
 next
   assume "x\<^sup>\<omega> = 0"
   hence "\<forall> y. y \<le> x \<cdot> y \<longrightarrow> y = 0"
-    by (metis omega_coinduct_var2 zero_unique)
+    using local.join.le_bot local.omega_coinduct_var2 by blast
   thus "\<not> ewp x"
     by (metis ewp_def)
 qed
@@ -380,7 +380,7 @@ text {* So we have obtained a condition for Arden's lemma in omega
 algebra.  *}
 
 lemma omega_super_id1: "0 \<noteq> 1 \<longrightarrow> 1 \<le> x \<longrightarrow> x\<^sup>\<omega> \<noteq> 0"
-  by (metis eq_iff max_element omega_iso zero_least)
+  using ewp_neg_and_omega ewp_super_id1 by blast
 
 lemma omega_super_id2: "0 \<noteq> 1 \<longrightarrow> x\<^sup>\<omega> = 0 \<longrightarrow> \<not>(1 \<le> x)"
   by (metis omega_super_id1)
@@ -429,7 +429,7 @@ lemma inf_star [simp]: "(x\<cdot>0)\<^sup>\<star> = 1 + x\<cdot>0"
   apply (rule antisym)
   apply (rule star_inductl_one[rule_format])
   apply (metis annil mult_assoc order_refl)
-  by (metis add_lub star_ext star_ref)
+  by simp
 
 lemma [simp]: "x \<cdot> 0 \<cdot> y = x \<cdot> 0"
   by (metis annil mult_assoc)
@@ -440,12 +440,12 @@ lemma inf_part_star1: "(y + x\<cdot>0)\<^sup>\<star> \<le> y\<^sup>\<star>\<cdot
   apply (subst star_unfoldl_eq[symmetric]) back back back
   apply (simp only: distrib_right distrib_left mult_assoc[symmetric])
   apply (simp add: distrib_left)
-  by (metis add_assoc add_commute local.distrib_left local.eq_refl local.mult_1_left local.mult_1_right local.star2 local.star_one local.troeger mult_assoc)
+  using local.dual_order.trans local.join.sup.cobounded1 local.join.sup_ge2 local.star_1l local.star_ref by blast
 
 lemma inf_part_star [simp]: "(y + x\<cdot>0)\<^sup>\<star> = y\<^sup>\<star>\<cdot>x\<cdot>0 + y\<^sup>\<star>"
   apply (rule antisym)
   apply (metis inf_part_star1)
-  by (metis add_commute add_lub mult_assoc prod_star_closure star_subdist star_subdist_var_1)
+  by (metis local.boffa local.conway.dagger_denest local.mult.semigroup_axioms local.star_denest local.star_ext local.star_plus_one local.star_trans_eq semigroup.assoc)
 
 (*
 lemma arden_conv1: "(\<forall>y z. z + x \<cdot> y = y \<longrightarrow> x\<^sup>\<star> \<cdot> z = y) \<longrightarrow> \<not> ewp x"

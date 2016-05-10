@@ -136,6 +136,41 @@ definition pleq :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> ('a \<Righ
 definition galois_connection :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> bool" where
   "galois_connection f g \<equiv> \<forall>x y. (f x \<le> y) \<longleftrightarrow> (x \<le> g y)"
 
+locale bi_ord = ord1: order le1 l1 + ord2: order le2 l2
+  for le1 (infix "\<le>\<^sub>1" 50)
+  and l1
+  and le2 (infix "\<le>\<^sub>2" 50)
+  and l2
+
+begin
+
+  definition galois_connection2 :: "('a \<Rightarrow> 'b) \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> bool" where
+    "galois_connection2 f g \<equiv> \<forall>x y. (f x \<le>\<^sub>2 y) \<longleftrightarrow> (x \<le>\<^sub>1 g y)"
+
+end
+
+sublocale order \<subseteq> bi_ord "(op \<le>)" "(op <)" "(op \<le>)" "(op <)"
+  by unfold_locales
+
+thm galois_connection2_def
+
+context order
+begin
+
+  thm galois_connection2_def
+
+end
+
+find_theorems name:galois_connection2
+
+lemma any_orders: "bi_ord (op \<le> :: 'a::order \<Rightarrow> 'a \<Rightarrow> bool) (op <) (op \<le> :: 'b::order \<Rightarrow> 'b \<Rightarrow> bool) (op <)"
+  by unfold_locales
+
+thm bi_ord.galois_connection2_def[OF any_orders] galois_connection_def
+
+lemma "bi_ord.galois_connection2 (op \<le>) (op \<le>) f g = galois_connection f g"
+  by (simp add: bi_ord.galois_connection2_def[OF any_orders] galois_connection_def)
+
 lemma galoisD: "galois_connection f g \<Longrightarrow> \<forall>x y. (f x \<le> y) \<longleftrightarrow> (x \<le> g y)"
   by (simp add: galois_connection_def)
 
@@ -280,6 +315,11 @@ lemma perfect2: "galois_connection f g \<Longrightarrow> f (g x) = x \<longleftr
 
 (* Fixpoints *)
 
+find_consts name:ccpo
+
+sublocale order \<subseteq> dual: order "op \<ge>" "op >"
+  by (rule local.dual_order)
+
 context order
 begin
 
@@ -301,10 +341,10 @@ definition is_lfp :: "'a \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> bool"
 definition is_gfp :: "'a \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> bool" where
   "is_gfp x f \<equiv> x = f x \<and> (\<forall>y. f y = y \<longrightarrow> y \<le> x)"
 
-definition least_fixpoint :: "('a \<Rightarrow> 'a) \<Rightarrow> 'a" ("\<mu>") where
-  "\<mu> f \<equiv> THE x. is_lfp x f"
+definition least_fixpoint :: "('a \<Rightarrow> 'a) \<Rightarrow> 'a" (binder "\<mu>" 10) where
+  "\<mu> x. f x \<equiv> THE x. is_lfp x f"
 
-notation least_fixpoint (binder "\<mu>" 10)
+notation least_fixpoint ("\<mu>")
 
 lemma lfp_eta: "(\<mu> x. f x) = \<mu> f" by simp
 
@@ -314,12 +354,10 @@ lemma lfp_equality: "is_lfp x f \<Longrightarrow> \<mu> f = x"
 lemma lpp_is_lfp: "(\<And>x y. x \<le> y \<Longrightarrow> f x \<le> f y) \<Longrightarrow> is_lpp x f \<Longrightarrow> is_lfp x f"
   by (auto intro: antisym simp add: is_lfp_def is_lpp_def)
 
-definition greatest_fixpoint :: "('a \<Rightarrow> 'a) \<Rightarrow> 'a" ("\<nu>") where
-  "\<nu> f \<equiv> THE x. is_gfp x f"
+definition greatest_fixpoint :: "('a \<Rightarrow> 'a) \<Rightarrow> 'a" (binder "\<nu>" 10) where
+  "\<nu> x. f x \<equiv> THE x. is_gfp x f"
 
-notation greatest_fixpoint (binder "\<nu>" 10)
-
-lemma gfp_eta: "(\<nu> x. f x) = \<nu> f" by simp
+notation greatest_fixpoint ("\<nu>")
 
 lemma gfp_equality: "is_gfp x f \<Longrightarrow> \<nu> f = x"
   by (metis (lifting) eq_iff greatest_fixpoint_def is_gfp_def the_equality)

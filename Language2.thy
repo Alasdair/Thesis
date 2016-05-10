@@ -1,4 +1,4 @@
-theory Language
+theory Language2
   imports "$AFP/Kleene_Algebra/Kleene_Algebra" Lazy_Sum_List Fixpoint Omega_Algebra
 begin
 
@@ -311,7 +311,7 @@ lemma lfinite_induct_pair [consumes 1, case_names Nil Cons]:
   and Nil: "P LNil"
   and Cons: "\<And>\<sigma> \<sigma>' x'. \<lbrakk>lfinite x'; P x'\<rbrakk> \<Longrightarrow> P (LCons (\<sigma>,\<sigma>') x')"
   shows "P x"
-  by (metis Language.lfinite_induct fin local.Cons local.Nil prod.collapse)
+  by (metis Language2.lfinite_induct fin local.Cons local.Nil prod.collapse)
 
 lemma interleave_ltakeWhile_is_right: "lfinite ys \<Longrightarrow> xs' \<triangleright> ltakeWhile is_right t \<triangleleft> ys' = ys \<frown> LCons x zs \<longrightarrow> is_right x"
 proof (induct ys arbitrary: xs' t ys' rule: lfinite_induct)
@@ -1174,7 +1174,7 @@ interpretation par: dioid_one_zero "op \<union>" "op \<parallel>" "{LNil}" "{}" 
   by (rule shuffle_dist)
 
 interpretation seq: dioid_one_zerol "op \<union>" "op \<cdot>" "{LNil}" "{}" "op \<subseteq>" "op \<subset>"
-  apply default
+  apply standard
   apply (metis l_prod_assoc)
   apply (metis l_prod_distr)
   apply (metis l_prod_one(1))
@@ -1213,7 +1213,8 @@ proof
     unfolding star_def
     apply (subst fp_compute[symmetric]) back
     apply auto
-    using l_prod_isor by blast
+    using seq.mult_isol by blast
+
   show "Z \<union> X \<cdot> Y \<subseteq> Y \<Longrightarrow> X\<^sup>\<star> \<cdot> Z \<subseteq> Y"
   proof -
     assume "Z \<union> X \<cdot> Y \<subseteq> Y"
@@ -1249,8 +1250,7 @@ proof
       apply (rule ext)
       apply (subst seq.star_unfoldl_eq[symmetric])
       apply (subst l_prod_distr)
-      apply simp
-      using seq.conway.dagger_unfoldl_distr seq.mult_assoc by blast
+      by (simp add: Un_left_commute seq.mult_assoc)
   qed
 
   assume "Y \<subseteq> Z \<union> X\<cdot>Y" thus "Y \<subseteq> X\<^sup>\<omega> \<union> X\<^sup>\<star>\<cdot>Z"
@@ -1526,8 +1526,8 @@ proof -
         apply (erule exE)
         apply simp
         apply (metis not0_implies_Suc)
-        apply (metis Language.power.simps(1) le0)
-        apply (metis Language.power.simps(2))
+        apply (metis Language2.power.simps(1) le0)
+        apply (metis Language2.power.simps(2))
         apply (erule_tac x = "i - 1" in allE)
         apply simp
         apply (subgoal_tac "i = 0 \<or> (\<exists>j. i = Suc j)")
@@ -1560,7 +1560,7 @@ lemma strict_inf_star: "x \<cdot> {} = x \<Longrightarrow> x\<^sup>\<star> = {LN
   apply (metis l_prod_zero seq.mult_assoc set_eq_subset)
   using seq.conway.dagger_refl by auto
 
-lemma infinite_power: "X \<cdot> {} = X \<Longrightarrow> xs \<in> Language.power X i \<Longrightarrow> xs \<notin> X \<Longrightarrow> xs = LNil"
+lemma infinite_power: "X \<cdot> {} = X \<Longrightarrow> xs \<in> Language2.power X i \<Longrightarrow> xs \<notin> X \<Longrightarrow> xs = LNil"
   apply (induct i arbitrary: xs)
   apply simp
   apply auto
@@ -1576,7 +1576,7 @@ lemma star_power_inf: "x \<cdot> {} = x \<Longrightarrow> x\<^sup>\<star> = \<Un
   apply simp
   apply (rule_tac x = 0 in exI)
   apply simp
-  apply (metis Language.power.simps(2) l_prod_zero seq.mult_assoc)
+  apply (metis Language2.power.simps(2) l_prod_zero seq.mult_assoc)
   by (metis infinite_power)
 
 lemma [simp]: "X \<subseteq> FIN \<Longrightarrow> (X \<parallel> Y \<cdot> {}) = (X \<parallel> Y) \<cdot> {}"
@@ -1595,7 +1595,7 @@ lemma zero_mid [simp]: "X \<cdot> {} \<cdot> Z = X \<cdot> {}"
 
 lemma power_leq_star: "power x i \<subseteq> x\<^sup>\<star>"
   apply (induct i)
-  using Language.power.simps(1) seq.conway.dagger_refl apply blast
+  using Language2.power.simps(1) seq.conway.dagger_refl apply blast
   apply simp
   by (metis seq.prod_star_closure seq.star_ext)
 
@@ -1782,8 +1782,8 @@ qed
 no_notation Cons (infixr "#" 65)
 notation LCons (infixr "#" 65)
 
-definition Env :: "'a rel \<Rightarrow> ('a \<times> 'a) lan \<Rightarrow> ('a \<times> 'a) lan" (infixr "\<Colon>" 52) where
-  "R \<Colon> X \<equiv> X \<inter> Collect (env (R\<^sup>*))"
+definition Env :: "'a rel \<Rightarrow> ('a \<times> 'a) lan \<Rightarrow> ('a \<times> 'a) lan" (infixr "::" 52) where
+  "R :: X \<equiv> X \<inter> Collect (env (R\<^sup>*))"
 
 lemma env_interE1 [elim]: "env (R \<inter> S) x \<Longrightarrow> env S x"
 proof -
@@ -1954,27 +1954,27 @@ proof -
   qed
 qed
 
-lemma Env_continuous: "R \<Colon> (\<Union>\<XX>) = \<Union>{R \<Colon> X |X. X \<in> \<XX>}"
+lemma Env_continuous: "R :: (\<Union>\<XX>) = \<Union>{R :: X |X. X \<in> \<XX>}"
   by (auto simp add: Env_def)
 
-lemma Env_inter [simp]: "R \<Colon> X \<inter> Y = (R \<Colon> X) \<inter> (R \<Colon> Y)"
+lemma Env_inter [simp]: "R :: X \<inter> Y = (R :: X) \<inter> (R :: Y)"
   by (metis Env_def Int_assoc inf_commute inf_left_idem)
 
-lemma Env_union [simp]: "R \<Colon> (X \<union> Y) = (R \<Colon> X) \<union> (R \<Colon> Y)"
+lemma Env_union [simp]: "R :: (X \<union> Y) = (R :: X) \<union> (R :: Y)"
   by (auto simp add: Env_def)
 
-lemma Env_coextensive [intro!]: "R \<Colon> X \<subseteq> X"
+lemma Env_coextensive [intro!]: "R :: X \<subseteq> X"
   by (auto simp add: Env_def)
 
-lemma Env_iso [intro]: "X \<subseteq> Y \<Longrightarrow> R \<Colon> X \<subseteq> R \<Colon> Y"
+lemma Env_iso [intro]: "X \<subseteq> Y \<Longrightarrow> R :: X \<subseteq> R :: Y"
   by (auto simp add: Env_def)
 
-lemma Env_idem [simp]: "R \<inter> S \<Colon> X \<subseteq> R \<Colon> S \<Colon> X"
+lemma Env_idem [simp]: "R \<inter> S :: X \<subseteq> R :: S :: X"
   apply (auto simp add: Env_def)
   apply (metis env_interE1 inf_absorb1 inf_sup_ord(2) rtrancl_mono)
   by (metis env_interE2 inf_absorb2 inf_sup_ord(1) rtrancl_mono)
 
-lemma Env_inter2: "R\<^sup>* \<inter> S\<^sup>* \<Colon> X = (R \<Colon> X) \<inter> (S \<Colon> X)"
+lemma Env_inter2: "R\<^sup>* \<inter> S\<^sup>* :: X = (R :: X) \<inter> (S :: X)"
   apply (auto simp add: Env_def)
   apply (metis env_interE2 inf.cobounded1 inf_absorb2 rtrancl_subset_rtrancl)
   apply (erule rev_mp)+
@@ -1983,7 +1983,7 @@ lemma Env_inter2: "R\<^sup>* \<inter> S\<^sup>* \<Colon> X = (R \<Colon> X) \<in
   apply (metis env_interE2 inf.cobounded1 inf_absorb2 rtrancl_subset_rtrancl)
   by (metis env_interE1 env_interI le_iff_inf r_into_rtrancl subsetI)
 
-lemma Env_set: "R \<Colon> X = {x. x \<in> X \<and> env (R\<^sup>*) x}"
+lemma Env_set: "R :: X = {x. x \<in> X \<and> env (R\<^sup>*) x}"
   by (auto simp add: Env_def)
 
 definition EnvUp :: "'a rel \<Rightarrow> ('a \<times> 'a) lan \<Rightarrow> ('a \<times> 'a) lan" (infixr "\<leadsto>" 52) where
@@ -1994,6 +1994,7 @@ definition rely :: "'a rel \<Rightarrow> ('a \<times> 'a) llist \<Rightarrow> ('
                                        \<and> y = z \<frown> ((\<sigma>,\<sigma>') # (\<tau>,\<tau>'') # y')
                                        \<and> (\<sigma>',\<tau>) \<notin> (R\<^sup>*)
                                        \<and> lfinite z
+                                       \<and> (lfinite x' \<longleftrightarrow> lfinite y')
                                        \<and> env (R\<^sup>*) (z \<frown> ((\<sigma>,\<sigma>') # LNil))) \<or> x = y"
 
 definition rely' ::  "'a rel \<Rightarrow> ('a \<times> 'a) llist \<Rightarrow> ('a \<times> 'a) llist \<Rightarrow> bool" where
@@ -2001,6 +2002,7 @@ definition rely' ::  "'a rel \<Rightarrow> ('a \<times> 'a) llist \<Rightarrow> 
                                         \<and> y = z \<frown> ((\<sigma>,\<sigma>') # (\<tau>,\<tau>'') # y')
                                         \<and> (\<sigma>',\<tau>) \<notin> (R\<^sup>*)
                                         \<and> lfinite z
+                                        \<and> (lfinite x' \<longleftrightarrow> lfinite y')
                                         \<and> env (R\<^sup>*) (z \<frown> ((\<sigma>,\<sigma>') # LNil)))"
 
 lemma rely_def_var: "rely R x y \<longleftrightarrow> rely' R x y \<or> x = y"
@@ -2056,10 +2058,10 @@ lemma env_split [simp]: "lfinite x \<Longrightarrow> env R (x \<frown> (y # y' #
 lemma Rely_EnvUp: "R \<rhd> X \<le> R \<leadsto> X"
   by (auto simp add: EnvUp_def Rely_def rely_def)
 
-lemma Env_galois: "R \<Colon> X \<le> Y \<longleftrightarrow> X \<le> (R \<leadsto> Y)"
+lemma Env_galois: "R :: X \<le> Y \<longleftrightarrow> X \<le> (R \<leadsto> Y)"
   by (auto simp add: Env_set EnvUp_def)
 
-lemma Rely_Env: "X \<le> R \<rhd> Y \<Longrightarrow> R \<Colon> X \<le> Y"
+lemma Rely_Env: "X \<le> R \<rhd> Y \<Longrightarrow> R :: X \<le> Y"
   by (metis Env_galois Rely_EnvUp Un_subset_iff sup.absorb1)
 
 lemma EnvUp_extensive: "X \<subseteq> R \<leadsto> X"
@@ -2297,6 +2299,7 @@ definition rely'' ::  "'a rel \<Rightarrow> ('a \<times> 'a) llist \<Rightarrow>
   "rely'' R x y \<equiv> (\<exists>z \<sigma> \<sigma>' \<tau> \<tau>' \<tau>'' x' y'. x = z \<frown> ((\<sigma>,\<sigma>') # (\<tau>,\<tau>') # x')
                                          \<and> y = z \<frown> ((\<sigma>,\<sigma>') # (\<tau>,\<tau>'') # y')
                                          \<and> (\<sigma>',\<tau>) \<notin> (R\<^sup>*)
+                                         \<and> (lfinite x' \<longleftrightarrow> lfinite y')
                                          \<and> lfinite z)"
 
 lemma llength_lprefix: "llength x < llength y \<Longrightarrow> z = x \<frown> w \<Longrightarrow> z = y \<frown> w \<Longrightarrow> lprefix x y"
@@ -2305,24 +2308,6 @@ lemma llength_lprefix: "llength x < llength y \<Longrightarrow> z = x \<frown> w
 lemma rely_trans2: "rely' R x y \<Longrightarrow> rely' G y z \<Longrightarrow> rely'' (R \<inter> G) x z"
   apply (simp add: rely'_def rely''_def)
   apply (erule exE)+
-  apply (rename_tac w w' \<sigma> \<gamma> \<sigma>' \<gamma>' \<tau> \<phi>)
-  apply (subgoal_tac "(llength w < llength w') \<or> (llength w = llength w') \<or> (llength w' < llength w)")
-  prefer 2
-  apply (metis antisym_conv2 not_less)
-  apply (erule disjE)
-  apply (erule conjE)+
-  apply (erule exE)+
-  apply (rule_tac x = w in exI)
-  apply (rule_tac x = \<sigma> in exI)
-  apply (rule_tac x = \<sigma>' in exI)
-  apply (rule_tac x = \<tau> in exI)
-  apply (intro conjI)
-  apply blast
-  apply (subgoal_tac "(\<exists>\<sigma> \<sigma>' w\<^sub>t. w' = w \<frown> ((\<sigma>,\<sigma>') # w\<^sub>t))")
-  apply (erule exE)+
-  prefer 2
-  apply (metis lappend_LNil2 lprefix_conv_lappend lprefix_lappendD lprefix_llength_le neq_LNil_conv not_less prod.collapse)
-  apply simp
   sorry
 
 lemma end_pair_lem: "lfinite z\<^sub>p \<Longrightarrow> z \<frown> ((\<sigma>, \<sigma>') # LNil) = z\<^sub>p \<frown> ((\<gamma>, \<gamma>') # (\<phi>, \<phi>') # LNil) \<Longrightarrow> z = z\<^sub>p \<frown> ((\<gamma>, \<gamma>') # LNil)"
@@ -2344,18 +2329,29 @@ next
 qed
 
 lemma rely_no_env: "rely'' R x y \<Longrightarrow> rely' R x y"
-proof (auto simp add: rely''_def)
+proof (simp add: rely''_def, (erule exE)+, (erule conjE)+, (erule exE)+, (erule conjE)+)
   fix z \<sigma> \<sigma>' \<tau> \<tau>' x' \<tau>'' y'
   assume "lfinite z"  
   and "x = z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>') # x')"
   and "y = z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>'') # y')"
   and "(\<sigma>', \<tau>) \<notin> R\<^sup>*"
+  and "lfinite x' = lfinite y'"
 
-  show "rely' R (z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>') # x')) (z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>'') # y'))"
+  have "rely' R (z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>') # x')) (z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>'') # y'))"
   proof (cases "env (R\<^sup>*) (z \<frown> ((\<sigma>,\<sigma>') # LNil))")
     assume "env (R\<^sup>*) (z \<frown> ((\<sigma>,\<sigma>') # LNil))"
     thus "rely' R (z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>') # x')) (z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>'') # y'))"
-      by (auto simp add: rely'_def) (metis `(\<sigma>', \<tau>) \<notin> R\<^sup>*` `lfinite z`)
+      apply (auto simp add: rely'_def)
+      apply (rule_tac x = z in exI)
+      apply (rule_tac x = \<sigma> in exI)
+      apply (rule_tac x = \<sigma>' in exI)
+      apply (rule_tac x = \<tau> in exI)
+      apply (rule_tac x = \<tau>' in exI)
+      apply (rule_tac x = \<tau>'' in exI)
+      apply (rule_tac x = x' in exI)
+      apply auto
+      apply (rule_tac x = y' in exI)
+      using `(\<sigma>', \<tau>) \<notin> R\<^sup>*` `lfinite x' = lfinite y'` `lfinite z` by blast
   next
     assume "\<not> env (R\<^sup>*) (z \<frown> ((\<sigma>,\<sigma>') # LNil))"
     from first_failure[OF this]
@@ -2369,15 +2365,19 @@ proof (auto simp add: rely''_def)
       apply (rule_tac x = \<gamma> in exI)
       apply (rule_tac x = \<gamma>' in exI)
       apply (rule_tac x = \<phi> in exI)
-      apply (intro conjI)
-      apply simp_all
+      apply (rule_tac x = \<phi>' in exI)
       apply (rule_tac x = \<phi>' in exI)
       apply (rule_tac x = "z\<^sub>t \<frown> ((\<tau>, \<tau>') # x')" in exI)
+      apply simp
+      apply (intro conjI)
       apply (metis `z \<frown> ((\<sigma>, \<sigma>') # LNil) = z\<^sub>p \<frown> ((\<gamma>, \<gamma>') # (\<phi>, \<phi>') # z\<^sub>t)` lappend_assoc lappend_code(1) lappend_code(2))
-      apply (rule_tac x = \<phi>' in exI)
       apply (rule_tac x = "z\<^sub>t \<frown> ((\<tau>, \<tau>'') # y')" in exI)
-      by (metis `z \<frown> ((\<sigma>, \<sigma>') # LNil) = z\<^sub>p \<frown> ((\<gamma>, \<gamma>') # (\<phi>, \<phi>') # z\<^sub>t)` lappend_assoc lappend_code(1) lappend_code(2))
+      apply (intro conjI)
+      apply (metis `z \<frown> ((\<sigma>, \<sigma>') # LNil) = z\<^sub>p \<frown> ((\<gamma>, \<gamma>') # (\<phi>, \<phi>') # z\<^sub>t)` lappend_assoc lappend_code(1) lappend_code(2))
+      by (simp add: `lfinite x' = lfinite y'`)
   qed
+  thus "rely' R x y"
+    using `x = z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>') # x')` `y = z \<frown> ((\<sigma>, \<sigma>') # (\<tau>, \<tau>'') # y')` by blast
 qed
 
 lemma lmap_unl_lfilter [simp]: "lmap unl (lfilter is_left t) = t' \<longleftrightarrow> lfilter is_left t = lmap Inl t'"
@@ -2617,7 +2617,8 @@ axiomatization
   alternate :: "'a llist \<Rightarrow> 'b llist \<Rightarrow> ('a + 'b) llist"
 where
   alternate_left [simp]: "\<ll> (alternate x y) = x" and
-  alternate_right [simp]: "\<rr> (alternate x y) = y"
+  alternate_right [simp]: "\<rr> (alternate x y) = y" and
+  alternate_finite [simp]: "lfinite (alternate x y) \<longleftrightarrow> lfinite x \<and> lfinite y"
 
 lemma rg_lefts_rights: "\<ll> z \<in> X \<Longrightarrow> \<rr> z \<in> Y \<Longrightarrow> lmap \<langle>id,id\<rangle> z \<in> X \<parallel> Y"
   by (auto simp add: shuffle_def tshuffle_words_def)
@@ -2647,8 +2648,6 @@ lemma shuffle_elem_ex: "z \<in> x \<sha> y \<Longrightarrow> (\<exists>t. z = x 
 
 abbreviation sng :: "'a \<Rightarrow> 'a llist" where
   "sng x \<equiv> LCons x LNil" 
-
-find_theorems LCons "op \<sha>"
 
 lemma LCons_tshuffle_1: "{sng (Inl \<sigma>)} \<cdot> (x \<sha> y) \<subseteq> (\<sigma> # x) \<sha> y"
   apply (auto simp add: l_prod_def)
@@ -2791,7 +2790,7 @@ lemma TL_traj_only_left:
 proof -
   have "\<And>x\<^sub>1. lfilter is_left (TL (x\<^sub>1::(unit + unit) llist)) = TL x\<^sub>1" by (metis Not_is_right lfilter_ltakeWhile lfilter_right_left)
   thus "TL t = lmap (\<lambda>x. Inl ()) (TL t)"
-    by (metis interleave_only_left_var lefts_def_var lefts_take_lefts_llength lmap_unl_lfilter traj_id traj_interleave)
+    by (smt llist.map_ident lmap_lfilter_left_eq old.unit.exhaust)
 qed
 
 lemma interleave_only_left_TL:
@@ -3255,22 +3254,22 @@ lemma lfinite_traj_from_Valid: "lfinite x \<Longrightarrow> lfinite y \<Longrigh
   apply (auto simp add: Valid_def)
   by (metis lfinite_llength_enat lfinite_lr llength_eq_enat_lfiniteD)
 
-lemma Env_Rely1: "R \<Colon> (R \<rhd> X) \<le> X"
+lemma Env_Rely1: "R :: (R \<rhd> X) \<le> X"
   by (metis Env_galois Rely_EnvUp)
 
 lemma rely_xy_env: "rely R x y \<Longrightarrow> env (R\<^sup>*) x \<Longrightarrow> x = y"
   by (auto simp add: rely_def)
 
-lemma Env_Rely2: "R \<rhd> (R \<Colon> X) \<le> X"
+lemma Env_Rely2: "R \<rhd> (R :: X) \<le> X"
   by (auto simp add: Rely_def Env_def) (metis rely_xy_env)
 
-lemma Env_Rely3: "R \<rhd> (R \<Colon> X) = R \<Colon> X"
+lemma Env_Rely3: "R \<rhd> (R :: X) = R :: X"
   apply (auto simp add: Rely_def Env_def)
   apply (metis rely_xy_env)
   apply (metis rely_xy_env)
   by (metis IntI mem_Collect_eq rely_refl)
 
-lemma Env_Rely4: "R \<Colon> (R \<rhd> X) = R \<Colon> X"
+lemma Env_Rely4: "R :: (R \<rhd> X) = R :: X"
   apply (auto simp add: Rely_def Env_def)
   apply (metis rely_sym rely_xy_env)
   by (metis rely_refl)
@@ -3479,6 +3478,12 @@ next
     by auto
 qed
 
+lemma Valid_traj_finiteness: "Valid x t y \<Longrightarrow> lfinite t \<longleftrightarrow> lfinite x \<and> lfinite y"
+  apply (auto simp add: Valid_def)
+  apply (metis lfinite_lefts llength_eq_infty_conv_lfinite)
+  apply (metis lfinite_rights llength_eq_infty_conv_lfinite)
+  by (metis lfinite_lr llength_eq_infty_conv_lfinite)
+
 lemma rely_guarantee':
   assumes "z \<in> x \<sha> y"
   and "x \<in> R \<union> G\<^sub>2 \<rhd> X \<inter> guar G\<^sub>1"
@@ -3523,7 +3528,7 @@ proof -
 
     from `rely' (R \<union> G\<^sub>2) x' x` obtain x\<^sub>p \<sigma>\<^sub>0 \<sigma>\<^sub>0' \<sigma>\<^sub>1 \<sigma>\<^sub>1' \<sigma>\<^sub>1'' x\<^sub>t x\<^sub>u
     where x'_def: "x' = x\<^sub>p \<frown> ((\<sigma>\<^sub>0,\<sigma>\<^sub>0') # (\<sigma>\<^sub>1,\<sigma>\<^sub>1') # x\<^sub>t)" and x_def: "x = x\<^sub>p \<frown> ((\<sigma>\<^sub>0,\<sigma>\<^sub>0') # (\<sigma>\<^sub>1,\<sigma>\<^sub>1'') # x\<^sub>u)"
-    and "(\<sigma>\<^sub>0',\<sigma>\<^sub>1) \<notin> (R \<union> G\<^sub>2)\<^sup>*" and "env ((R \<union> G\<^sub>2)\<^sup>*) (x\<^sub>p \<frown> ((\<sigma>\<^sub>0,\<sigma>\<^sub>0') # LNil))" and "lfinite x\<^sub>p"
+    and "(\<sigma>\<^sub>0',\<sigma>\<^sub>1) \<notin> (R \<union> G\<^sub>2)\<^sup>*" and "env ((R \<union> G\<^sub>2)\<^sup>*) (x\<^sub>p \<frown> ((\<sigma>\<^sub>0,\<sigma>\<^sub>0') # LNil))" and "lfinite x\<^sub>u = lfinite x\<^sub>t" and "lfinite x\<^sub>p"
       by (auto simp add: rely'_def)
 
     have x\<^sub>p_guar [simp]: "x\<^sub>p \<in> guar G\<^sub>1"
@@ -3543,7 +3548,7 @@ proof -
 
     from `rely' (R \<union> G\<^sub>1) y' y` obtain y\<^sub>p \<tau>\<^sub>0 \<tau>\<^sub>0' \<tau>\<^sub>1 \<tau>\<^sub>1' \<tau>\<^sub>1'' y\<^sub>t y\<^sub>u
     where y'_def: "y' = y\<^sub>p \<frown> ((\<tau>\<^sub>0,\<tau>\<^sub>0') # (\<tau>\<^sub>1,\<tau>\<^sub>1') # y\<^sub>t)" and y_def: "y = y\<^sub>p \<frown> ((\<tau>\<^sub>0,\<tau>\<^sub>0') # (\<tau>\<^sub>1,\<tau>\<^sub>1'') # y\<^sub>u)"
-    and "(\<tau>\<^sub>0',\<tau>\<^sub>1) \<notin> (R \<union> G\<^sub>1)\<^sup>*" and "env ((R \<union> G\<^sub>1)\<^sup>*) (y\<^sub>p \<frown> ((\<tau>\<^sub>0,\<tau>\<^sub>0') # LNil))" and "lfinite y\<^sub>p"
+    and "(\<tau>\<^sub>0',\<tau>\<^sub>1) \<notin> (R \<union> G\<^sub>1)\<^sup>*" and "env ((R \<union> G\<^sub>1)\<^sup>*) (y\<^sub>p \<frown> ((\<tau>\<^sub>0,\<tau>\<^sub>0') # LNil))" and "lfinite y\<^sub>u = lfinite y\<^sub>t" and "lfinite y\<^sub>p"
       by (auto simp add: rely'_def)
 
     have y\<^sub>p_guar [simp]: "y\<^sub>p \<in> guar G\<^sub>2"
@@ -3643,7 +3648,13 @@ proof -
         apply (smt id_apply lappend_assoc lappend_code(1) lappend_code(2) llist.simps(13) lmap_lappend_distrib old.sum.simps(5) old.sum.simps(6))
         apply (smt all_lefts id_apply lappend_assoc lappend_code(1) lappend_code(2) lefts_def_var lefts_mapl llist.distinct(2) llist.exhaust llist.inject llist.map(2) llist.sel(1) llist.sel(3) lmap_lappend_distrib sum.case(1) sum.case(2) sum.distinct(1) sumE unl.simps(1))
         apply (metis `(\<tau>\<^sub>0', \<tau>\<^sub>1) \<notin> (R \<union> G\<^sub>1)\<^sup>*` in_rtrancl_UnI)
-        by simp
+        apply simp_all
+        apply auto
+        using Valid_traj_finiteness[OF `Valid x\<^sub>u t\<^sub>2 y\<^sub>u''`]
+        apply (auto simp add: Valid_def)
+        apply (simp_all add: `lfinite x\<^sub>u = lfinite x\<^sub>t`)
+        using `lfinite y\<^sub>u = lfinite y\<^sub>t` `y\<^sub>u = y\<^sub>u' \<frown> y\<^sub>u''` lfinite_lappend apply blast
+        using `lfinite y\<^sub>u = lfinite y\<^sub>t` `lfinite y\<^sub>u'` `y\<^sub>u = y\<^sub>u' \<frown> y\<^sub>u''` lfinite_lappend by blast
 
       show "lmap \<langle>id,id\<rangle> z \<in> R \<rhd> (X \<inter> guar G\<^sub>1) \<parallel> (Y \<inter> guar G\<^sub>2)"
         apply (auto simp only: Rely_def)
@@ -3759,7 +3770,15 @@ proof -
         apply simp
         apply (metis fp2[simplified] lappend_code(2))
         apply (metis `(\<gamma>', \<phi>) \<notin> R\<^sup>*`)
-        by simp
+        apply simp_all
+        apply auto
+        using Valid_traj_finiteness[OF `Valid x\<^sub>u'' t\<^sub>2 y\<^sub>u`]
+        apply simp_all
+        apply (metis `lfinite y\<^sub>p''` fp2 lfinite_LCons lfinite_LNil lfinite_lappend)
+        using `lfinite x\<^sub>u = lfinite x\<^sub>t` `lfinite y\<^sub>u = lfinite y\<^sub>t` `x\<^sub>u = x\<^sub>u' \<frown> x\<^sub>u''` lfinite_lappend apply blast
+        apply (metis `lfinite y\<^sub>p''` fp lfinite_LCons lfinite_LNil lfinite_lappend)
+        using `lfinite x\<^sub>u = lfinite x\<^sub>t` `lfinite x\<^sub>u'` `x\<^sub>u = x\<^sub>u' \<frown> x\<^sub>u''` lfinite_lappend apply blast
+        using `lfinite y\<^sub>u = lfinite y\<^sub>t` by blast
 
       show "lmap \<langle>id,id\<rangle> z \<in> R \<rhd> (X \<inter> guar G\<^sub>1) \<parallel> (Y \<inter> guar G\<^sub>2)"
         apply (auto simp only: Rely_def)
@@ -3866,7 +3885,12 @@ proof -
         apply (rule first_lappend_eq)
         apply (simp add: fp2[simplified])
         apply (metis `(\<gamma>', \<phi>) \<notin> R\<^sup>*`)
-        by simp
+        apply simp_all
+        apply auto
+        apply (metis `lfinite y\<^sub>p''` fp2 lfinite_LCons lfinite_LNil lfinite_lappend)
+        using Valid_traj_finiteness[OF `Valid x\<^sub>u t\<^sub>2 (y\<^sub>p''' \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1'') # y\<^sub>u))`] and `lfinite x\<^sub>u = lfinite x\<^sub>t` and `lfinite y\<^sub>u = lfinite y\<^sub>t`
+        apply auto
+        by (metis `lfinite y\<^sub>p''` fp lfinite_LCons lfinite_LNil lfinite_lappend)
 
       show "lmap \<langle>id,id\<rangle> z \<in> R \<rhd> (X \<inter> guar G\<^sub>1) \<parallel> (Y \<inter> guar G\<^sub>2)"
         apply (auto simp only: Rely_def)
@@ -3937,7 +3961,11 @@ proof -
         apply (smt id_apply lappend_assoc lappend_code(1) lappend_code(2) llist.simps(13) lmap_lappend_distrib old.sum.simps(5) old.sum.simps(6))
         apply (simp add: lmap_lappend_distrib lappend_assoc)
         apply (metis `(\<sigma>\<^sub>0', \<sigma>\<^sub>1) \<notin> (R \<union> G\<^sub>2)\<^sup>*` in_rtrancl_UnI)
-        by simp
+        apply simp_all
+        using Valid_traj_finiteness[OF `Valid x\<^sub>u'' t\<^sub>2 y\<^sub>u`] and `lfinite x\<^sub>u = lfinite x\<^sub>t` and `lfinite y\<^sub>u = lfinite y\<^sub>t`
+        apply auto
+        using `lfinite x\<^sub>u'` `x\<^sub>u = x\<^sub>u' \<frown> x\<^sub>u''` lfinite_lappend apply blast
+        using `x\<^sub>u = x\<^sub>u' \<frown> x\<^sub>u''` lfinite_lappend by blast
 
       show "lmap \<langle>id,id\<rangle> z \<in> R \<rhd> (X \<inter> guar G\<^sub>1) \<parallel> (Y \<inter> guar G\<^sub>2)"
         apply (auto simp only: Rely_def)
@@ -4055,7 +4083,15 @@ proof -
         apply simp
         apply (metis fp2[simplified] lappend_code(2))
         apply (metis `(\<gamma>', \<phi>) \<notin> R\<^sup>*`)
-        by simp
+        apply simp_all
+        using Valid_traj_finiteness[OF `Valid x\<^sub>u t\<^sub>2 y\<^sub>u''`] and `lfinite x\<^sub>u = lfinite x\<^sub>t` and `lfinite y\<^sub>u = lfinite y\<^sub>t`
+        apply auto
+        apply (metis `lfinite x\<^sub>p''` fp2 lfinite_LCons lfinite_LNil lfinite_lappend)
+        apply (metis `lfinite x\<^sub>p''` fp lfinite_LCons lfinite_LNil lfinite_lappend)
+        using `lfinite y\<^sub>u'` `y\<^sub>u = y\<^sub>u' \<frown> y\<^sub>u''` lfinite_lappend apply blast
+        using `lfinite y\<^sub>u'` `y\<^sub>u = y\<^sub>u' \<frown> y\<^sub>u''` lfinite_lappend apply blast
+        using `y\<^sub>u = y\<^sub>u' \<frown> y\<^sub>u''` lfinite_lappend apply blast
+        using `y\<^sub>u = y\<^sub>u' \<frown> y\<^sub>u''` lfinite_lappend by blast
 
       show "lmap \<langle>id,id\<rangle> z \<in> R \<rhd> (X \<inter> guar G\<^sub>1) \<parallel> (Y \<inter> guar G\<^sub>2)"
         apply (auto simp only: Rely_def)
@@ -4160,7 +4196,11 @@ proof -
         apply (rule first_lappend_eq)
         apply (simp add: fp2[simplified])
         apply (metis `(\<gamma>', \<phi>) \<notin> R\<^sup>*`)
-        by simp
+        apply simp_all
+        using Valid_traj_finiteness[OF `Valid (x\<^sub>p''' \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1'') # x\<^sub>u)) t\<^sub>2 y\<^sub>u`] and `lfinite x\<^sub>u = lfinite x\<^sub>t` and `lfinite y\<^sub>u = lfinite y\<^sub>t`
+        apply auto
+        apply (metis `lfinite x\<^sub>p''` fp2 lfinite_LCons lfinite_LNil lfinite_lappend)
+        by (metis `lfinite x\<^sub>p''` fp lfinite_LCons lfinite_LNil lfinite_lappend)
 
       show "lmap \<langle>id,id\<rangle> z \<in> R \<rhd> (X \<inter> guar G\<^sub>1) \<parallel> (Y \<inter> guar G\<^sub>2)"
         apply (auto simp only: Rely_def)
@@ -4174,7 +4214,7 @@ proof -
 
     from `rely' (R \<union> G\<^sub>2) x' x` obtain x\<^sub>p \<sigma>\<^sub>0 \<sigma>\<^sub>0' \<sigma>\<^sub>1 \<sigma>\<^sub>1' \<sigma>\<^sub>1'' x\<^sub>t x\<^sub>u
     where x'_def: "x' = x\<^sub>p \<frown> ((\<sigma>\<^sub>0,\<sigma>\<^sub>0') # (\<sigma>\<^sub>1,\<sigma>\<^sub>1') # x\<^sub>t)" and x_def: "x = x\<^sub>p \<frown> ((\<sigma>\<^sub>0,\<sigma>\<^sub>0') # (\<sigma>\<^sub>1,\<sigma>\<^sub>1'') # x\<^sub>u)"
-    and "(\<sigma>\<^sub>0',\<sigma>\<^sub>1) \<notin> (R \<union> G\<^sub>2)\<^sup>*" and "env ((R \<union> G\<^sub>2)\<^sup>*) (x\<^sub>p \<frown> ((\<sigma>\<^sub>0,\<sigma>\<^sub>0') # LNil))" and "lfinite x\<^sub>p"
+    and "(\<sigma>\<^sub>0',\<sigma>\<^sub>1) \<notin> (R \<union> G\<^sub>2)\<^sup>*" and "env ((R \<union> G\<^sub>2)\<^sup>*) (x\<^sub>p \<frown> ((\<sigma>\<^sub>0,\<sigma>\<^sub>0') # LNil))" and "lfinite x\<^sub>t = lfinite x\<^sub>u" and "lfinite x\<^sub>p"
       by (auto simp add: rely'_def)
 
     have x\<^sub>p_guar [simp]: "x\<^sub>p \<in> guar G\<^sub>1"
@@ -4321,7 +4361,14 @@ proof -
       apply (rule first_lappend_eq)
       apply (simp add: fp2[simplified])
       apply (metis `(\<gamma>', \<phi>) \<notin> R\<^sup>*`)
-      by simp
+      apply simp_all
+      using Valid_traj_finiteness[OF `Valid x\<^sub>u t\<^sub>2 y\<^sub>p'''`]
+      apply auto
+      apply (metis `lfinite y\<^sub>p''` fp2 lfinite_LCons lfinite_LNil lfinite_lappend)
+      apply (metis `lfinite y\<^sub>p''` fp lfinite_LCons lfinite_LNil lfinite_lappend)
+      using `lfinite x\<^sub>t = lfinite x\<^sub>u` apply blast
+      using `lfinite x\<^sub>t = lfinite x\<^sub>u` apply blast
+      using `lfinite x\<^sub>t = lfinite x\<^sub>u` by blast
 
     show "lmap \<langle>id,id\<rangle> z \<in> R \<rhd> (X \<inter> guar G\<^sub>1) \<parallel> (Y \<inter> guar G\<^sub>2)"
       apply (auto simp only: Rely_def)
@@ -4334,7 +4381,7 @@ proof -
 
     from `rely' (R \<union> G\<^sub>1) y' y` obtain y\<^sub>p \<tau>\<^sub>0 \<tau>\<^sub>0' \<tau>\<^sub>1 \<tau>\<^sub>1' \<tau>\<^sub>1'' y\<^sub>t y\<^sub>u
     where y'_def: "y' = y\<^sub>p \<frown> ((\<tau>\<^sub>0,\<tau>\<^sub>0') # (\<tau>\<^sub>1,\<tau>\<^sub>1') # y\<^sub>t)" and y_def: "y = y\<^sub>p \<frown> ((\<tau>\<^sub>0,\<tau>\<^sub>0') # (\<tau>\<^sub>1,\<tau>\<^sub>1'') # y\<^sub>u)"
-    and "(\<tau>\<^sub>0',\<tau>\<^sub>1) \<notin> (R \<union> G\<^sub>1)\<^sup>*" and "env ((R \<union> G\<^sub>1)\<^sup>*) (y\<^sub>p \<frown> ((\<tau>\<^sub>0,\<tau>\<^sub>0') # LNil))" and "lfinite y\<^sub>p"
+    and "(\<tau>\<^sub>0',\<tau>\<^sub>1) \<notin> (R \<union> G\<^sub>1)\<^sup>*" and "env ((R \<union> G\<^sub>1)\<^sup>*) (y\<^sub>p \<frown> ((\<tau>\<^sub>0,\<tau>\<^sub>0') # LNil))" and "lfinite y\<^sub>t = lfinite y\<^sub>u" and "lfinite y\<^sub>p"
       by (auto simp add: rely'_def)
 
     have y\<^sub>p_guar [simp]: "y\<^sub>p \<in> guar G\<^sub>2"
@@ -4461,7 +4508,14 @@ proof -
       apply (rule first_lappend_eq)
       apply (simp add: fp2[simplified])
       apply (metis `(\<gamma>', \<phi>) \<notin> R\<^sup>*`)
-       by simp
+      apply simp_all
+      using Valid_traj_finiteness[OF `Valid x\<^sub>p''' t\<^sub>2 y\<^sub>u`]
+      apply auto
+      apply (metis `lfinite x\<^sub>p''` fp2 lfinite_LCons lfinite_LNil lfinite_lappend)
+      apply (metis `lfinite x\<^sub>p''` fp lfinite_LCons lfinite_LNil lfinite_lappend)
+      using `lfinite y\<^sub>t = lfinite y\<^sub>u` apply blast
+      using `lfinite y\<^sub>t = lfinite y\<^sub>u` apply blast
+      using `lfinite y\<^sub>t = lfinite y\<^sub>u` by blast
 
     show "lmap \<langle>id,id\<rangle> z \<in> R \<rhd> (X \<inter> guar G\<^sub>1) \<parallel> (Y \<inter> guar G\<^sub>2)"
       apply (auto simp only: Rely_def)
@@ -4497,8 +4551,10 @@ lemma rely_antitone: "G\<^sup>* \<subseteq> R\<^sup>* \<Longrightarrow> rely R x
   apply (rule_tac x = \<sigma> in exI)
   apply (rule_tac x = \<sigma>' in exI)
   apply (rule_tac x = \<tau> in exI)
+  apply (rule_tac x = \<tau>' in exI)
+  apply (rule_tac x = \<tau>'' in exI)
+  apply (rule_tac x = x' in exI)
   apply (intro conjI)
-  apply metis
   apply metis
   apply (metis contra_subsetD)
   apply simp
@@ -4544,45 +4600,24 @@ lemma Rely_zero [simp]: "(R \<rhd> {}) = {}"
 lemma non_empty_elemD: "Y \<noteq> {} \<Longrightarrow> \<exists>y. y \<in> Y"
   by auto
 
-lemma rely_l_prod1: "Y \<noteq> {} \<Longrightarrow> \<not> lfinite t \<Longrightarrow> t \<in> R \<rhd> X \<Longrightarrow> t \<in> R \<rhd> X \<cdot> Y"
+lemma rely_l_prod1: "\<not> lfinite t \<Longrightarrow> t \<in> R \<rhd> X \<Longrightarrow> t \<in> R \<rhd> X \<cdot> Y"
   apply (simp add: Rely_def)
-  apply (drule non_empty_elemD)
   apply (erule bexE)
-  apply (erule exE)
-  apply (rule_tac x = "x \<frown> y" in bexI)
+  apply (rule_tac x = "x" in bexI)
   prefer 2
-  apply (simp add: lappend_in_l_prod)
-  apply (simp add: rely_def)
-  apply (erule disjE)
-  apply (rule disjI1)
-  apply (erule exE)+
-  apply (erule conjE)+
-  apply (erule exE)+
-  apply (rule_tac x = z in exI)
-  apply (rule_tac x = \<sigma> in exI)
-  apply (rule_tac x = \<sigma>' in exI)
-  apply (rule_tac x = \<tau> in exI)
-  apply simp
-  apply (intro conjI)
-  apply (rule_tac x = \<tau>' in exI)
-  apply (rule_tac x = "x' \<frown> y" in exI)
-  apply (simp add: sngify)
-  apply (rule_tac x = \<tau>'' in exI)
-  apply (rule_tac x = y' in exI)
-  apply simp
-  apply (rule disjI2)
-  apply simp
-  using lappend_inf by blast
+  apply (subgoal_tac "\<not> lfinite x")
+  apply (simp add: l_prod_def)
+  by (auto simp add: rely_def)
 
 lemma rely_l_prod2'':
-  assumes "\<exists>x\<^sub>p \<sigma>\<^sub>0 \<sigma>\<^sub>0' \<sigma>\<^sub>1.
-    (\<exists>\<sigma>\<^sub>1' x\<^sub>t. x = x\<^sub>p \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1') # x\<^sub>t)) \<and>
-    (\<exists>\<sigma>\<^sub>1'' x\<^sub>t'. x' = x\<^sub>p \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1'') # x\<^sub>t')) \<and>
-    (\<sigma>\<^sub>0', \<sigma>\<^sub>1) \<notin> R\<^sup>* \<and> lfinite x\<^sub>p \<and> env (R\<^sup>*) (x\<^sub>p \<frown> sng (\<sigma>\<^sub>0, \<sigma>\<^sub>0'))"
-  and "\<exists>y\<^sub>p \<tau>\<^sub>0 \<tau>\<^sub>0' \<tau>\<^sub>1.
-    (\<exists>\<tau>\<^sub>1' y\<^sub>t. y = y\<^sub>p \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1') # y\<^sub>t)) \<and>
-    (\<exists>\<tau>\<^sub>1'' y\<^sub>t'. y' = y\<^sub>p \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1'') # y\<^sub>t')) \<and>
-    (\<tau>\<^sub>0', \<tau>\<^sub>1) \<notin> R\<^sup>* \<and> lfinite y\<^sub>p \<and> env (R\<^sup>*) (y\<^sub>p \<frown> sng (\<tau>\<^sub>0, \<tau>\<^sub>0'))"
+  assumes "\<exists>x\<^sub>p \<sigma>\<^sub>0 \<sigma>\<^sub>0' \<sigma>\<^sub>1 \<sigma>\<^sub>1' x\<^sub>t \<sigma>\<^sub>1'' x\<^sub>t'.
+    x = x\<^sub>p \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1') # x\<^sub>t) \<and>
+    x' = x\<^sub>p \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1'') # x\<^sub>t') \<and>
+    (\<sigma>\<^sub>0', \<sigma>\<^sub>1) \<notin> R\<^sup>* \<and> lfinite x\<^sub>p \<and> (lfinite x\<^sub>t \<longleftrightarrow> lfinite x\<^sub>t') \<and> env (R\<^sup>*) (x\<^sub>p \<frown> sng (\<sigma>\<^sub>0, \<sigma>\<^sub>0'))"
+  and "\<exists>y\<^sub>p \<tau>\<^sub>0 \<tau>\<^sub>0' \<tau>\<^sub>1 \<tau>\<^sub>1' y\<^sub>t \<tau>\<^sub>1'' y\<^sub>t'.
+    y = y\<^sub>p \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1') # y\<^sub>t) \<and>
+    y' = y\<^sub>p \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1'') # y\<^sub>t') \<and>
+    (\<tau>\<^sub>0', \<tau>\<^sub>1) \<notin> R\<^sup>* \<and> lfinite y\<^sub>p \<and> (lfinite y\<^sub>t \<longleftrightarrow> lfinite y\<^sub>t') \<and> env (R\<^sup>*) (y\<^sub>p \<frown> sng (\<tau>\<^sub>0, \<tau>\<^sub>0'))"
   shows "rely R (x \<frown> y) (x' \<frown> y')"
   using assms
   apply -
@@ -4595,22 +4630,21 @@ lemma rely_l_prod2'':
   apply (rule_tac x = \<sigma>\<^sub>0 in exI)
   apply (rule_tac x = \<sigma>\<^sub>0' in exI)
   apply (rule_tac x = \<sigma>\<^sub>1 in exI)
-  apply (intro conjI)
-  defer defer
-  apply simp
-  apply simp
   apply (rule_tac x = \<sigma>\<^sub>1' in exI)
-  apply (rule_tac x = "x\<^sub>t \<frown> y" in exI)
-  apply (simp add: lappend_assoc)
   apply (rule_tac x = \<sigma>\<^sub>1'' in exI)
+  apply (rule_tac x = "x\<^sub>t \<frown> y" in exI)
+  apply simp
+  apply (intro conjI)
+  apply (simp add: lappend_assoc)
   apply (rule_tac x = "x\<^sub>t' \<frown> y'" in exI)
-  by (simp add: lappend_assoc)
+  apply (intro conjI)
+  by (simp_all add: lappend_assoc)
 
 lemma rely_l_prod2_1a'':
-  assumes "\<exists>x\<^sub>p \<sigma>\<^sub>0 \<sigma>\<^sub>0' \<sigma>\<^sub>1.
-    (\<exists>\<sigma>\<^sub>1' x\<^sub>t. x = x\<^sub>p \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1') # x\<^sub>t)) \<and>
-    (\<exists>\<sigma>\<^sub>1'' x\<^sub>t'. x' = x\<^sub>p \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1'') # x\<^sub>t')) \<and>
-    (\<sigma>\<^sub>0', \<sigma>\<^sub>1) \<notin> R\<^sup>* \<and> lfinite x\<^sub>p \<and> env (R\<^sup>*) (x\<^sub>p \<frown> sng (\<sigma>\<^sub>0, \<sigma>\<^sub>0'))"
+  assumes "\<exists>x\<^sub>p \<sigma>\<^sub>0 \<sigma>\<^sub>0' \<sigma>\<^sub>1 \<sigma>\<^sub>1' x\<^sub>t \<sigma>\<^sub>1'' x\<^sub>t' .
+    x = x\<^sub>p \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1') # x\<^sub>t) \<and>
+    x' = x\<^sub>p \<frown> ((\<sigma>\<^sub>0, \<sigma>\<^sub>0') # (\<sigma>\<^sub>1, \<sigma>\<^sub>1'') # x\<^sub>t') \<and>
+    (\<sigma>\<^sub>0', \<sigma>\<^sub>1) \<notin> R\<^sup>* \<and> lfinite x\<^sub>p \<and> (lfinite x\<^sub>t = lfinite x\<^sub>t') \<and> env (R\<^sup>*) (x\<^sub>p \<frown> sng (\<sigma>\<^sub>0, \<sigma>\<^sub>0'))"
   shows "rely R (x \<frown> y) (x' \<frown> y)"
   using assms
   apply -
@@ -4623,24 +4657,23 @@ lemma rely_l_prod2_1a'':
   apply (rule_tac x = \<sigma>\<^sub>0 in exI)
   apply (rule_tac x = \<sigma>\<^sub>0' in exI)
   apply (rule_tac x = \<sigma>\<^sub>1 in exI)
-  apply (intro conjI)
-  defer defer
-  apply simp
-  apply simp
   apply (rule_tac x = \<sigma>\<^sub>1' in exI)
-  apply (rule_tac x = "x\<^sub>t \<frown> y" in exI)
-  apply (simp add: lappend_assoc)
   apply (rule_tac x = \<sigma>\<^sub>1'' in exI)
+  apply (rule_tac x = "x\<^sub>t \<frown> y" in exI)
+  apply (intro conjI)
+  apply (simp add: lappend_assoc)
   apply (rule_tac x = "x\<^sub>t' \<frown> y" in exI)
   by (simp add: lappend_assoc)
 
 lemma rely_l_prod2_1b'':
-  assumes "lfinite x"
-  and "\<exists>y\<^sub>p \<tau>\<^sub>0 \<tau>\<^sub>0' \<tau>\<^sub>1.
-    (\<exists>\<tau>\<^sub>1' y\<^sub>t. y = y\<^sub>p \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1') # y\<^sub>t)) \<and>
-    (\<exists>\<tau>\<^sub>1'' y\<^sub>t'. y' = y\<^sub>p \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1'') # y\<^sub>t')) \<and>
-    (\<tau>\<^sub>0', \<tau>\<^sub>1) \<notin> R\<^sup>* \<and> lfinite y\<^sub>p \<and> env (R\<^sup>*) (y\<^sub>p \<frown> sng (\<tau>\<^sub>0, \<tau>\<^sub>0'))"
+  assumes "\<exists>y\<^sub>p \<tau>\<^sub>0 \<tau>\<^sub>0' \<tau>\<^sub>1 \<tau>\<^sub>1' y\<^sub>t \<tau>\<^sub>1'' y\<^sub>t'.
+    y = y\<^sub>p \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1') # y\<^sub>t) \<and>
+    y' = y\<^sub>p \<frown> ((\<tau>\<^sub>0, \<tau>\<^sub>0') # (\<tau>\<^sub>1, \<tau>\<^sub>1'') # y\<^sub>t') \<and>
+    (\<tau>\<^sub>0', \<tau>\<^sub>1) \<notin> R\<^sup>* \<and> lfinite y\<^sub>p \<and> (lfinite y\<^sub>t = lfinite y\<^sub>t') \<and> env (R\<^sup>*) (y\<^sub>p \<frown> sng (\<tau>\<^sub>0, \<tau>\<^sub>0'))"
   shows "rely R (x \<frown> y) (x \<frown> y')"
+  apply (cases "lfinite x")
+  defer
+  apply (simp add: lappend_inf rely_refl)
   using assms
   apply -
   apply (rule prime_rely)
@@ -4652,18 +4685,15 @@ lemma rely_l_prod2_1b'':
   apply (rule_tac x = \<tau>\<^sub>0 in exI)
   apply (rule_tac x = \<tau>\<^sub>0' in exI)
   apply (rule_tac x = \<tau>\<^sub>1 in exI)
-  apply (intro conjI)
-  defer defer
-  apply simp
-  apply simp
   apply (rule_tac x = \<tau>\<^sub>1' in exI)
-  apply (rule_tac x = y\<^sub>t in exI)
-  apply (simp add: lappend_assoc)
   apply (rule_tac x = \<tau>\<^sub>1'' in exI)
+  apply (rule_tac x = y\<^sub>t in exI)
+  apply (intro conjI)
+  apply (simp add: lappend_assoc)
   apply (rule_tac x = y\<^sub>t' in exI)
   by (simp add: lappend_assoc)
 
-lemma rely_l_prod2: "lfinite x' \<Longrightarrow> rely R x x'\<Longrightarrow> rely R y y' \<Longrightarrow> rely R (x \<frown> y) (x' \<frown> y')"
+lemma rely_l_prod2: "rely R x x'\<Longrightarrow> rely R y y' \<Longrightarrow> rely R (x \<frown> y) (x' \<frown> y')"
   apply (erule rev_mp)+
   apply (subst rely_def)
   apply (subst rely_def)
@@ -4676,12 +4706,14 @@ lemma rely_l_prod2: "lfinite x' \<Longrightarrow> rely R x x'\<Longrightarrow> r
   using rely_refl apply blast
   prefer 2
   apply (rule rely_l_prod2'')
-  apply simp
-  apply simp
-  apply (simp add: rely_l_prod2_1a'')
-  by (simp add: rely_l_prod2_1b'')
+  apply blast
+  apply blast
+  apply (rule rely_l_prod2_1a'')
+  apply blast
+  apply (rule rely_l_prod2_1b'')
+  by blast
 
-lemma rely_l_prod_nz: "Y \<noteq> {} \<Longrightarrow> (R \<rhd> X) \<cdot> (R \<rhd> Y) \<subseteq> R \<rhd> (X \<cdot> Y)"
+lemma rely_l_prod: "(R \<rhd> X) \<cdot> (R \<rhd> Y) \<subseteq> R \<rhd> (X \<cdot> Y)"
   apply (simp add: subset_iff)
   apply (intro impI allI)
   apply (drule l_prod_elem_cases)
@@ -4699,94 +4731,6 @@ lemma rely_l_prod_nz: "Y \<noteq> {} \<Longrightarrow> (R \<rhd> X) \<cdot> (R \
   apply (rule_tac x = "x \<frown> y" in bexI)
   apply (simp add: rely_l_prod2)
   using lappend_in_l_prod by blast
-
-definition rely_abort :: "'a rel \<Rightarrow> ('a \<times> 'a) llist \<Rightarrow> ('a \<times> 'a) llist \<Rightarrow> bool" where
-  "rely_abort R x y \<equiv> (\<exists>z \<sigma> \<sigma>' \<tau> \<tau>' \<tau>'' x' y'. x = z \<frown> ((\<sigma>,\<sigma>') # (\<tau>,\<tau>') # x')
-                                             \<and> y = z \<frown> ((\<sigma>,\<sigma>') # (\<tau>,\<tau>'') # y')
-                                             \<and> (\<sigma>',\<tau>) \<notin> (R\<^sup>*)
-                                             \<and> lfinite z
-                                             \<and> env (R\<^sup>*) (z \<frown> ((\<sigma>,\<sigma>') # LNil))
-                                             \<and> (lfinite x' \<longleftrightarrow> lfinite y')) \<or> x = y"
-
-lemma ra1: "rely_abort R x y \<Longrightarrow> lfinite x \<longleftrightarrow> lfinite y"
-  apply (simp add: rely_abort_def)
-  apply (erule disjE)+
-  by auto
-
-lemma ra2: "rely_abort R x y \<Longrightarrow> rely R x y"
-  by (auto simp add: rely_abort_def rely_def) blast+
-
-lemma ra3: "lfinite x \<longleftrightarrow> lfinite y \<Longrightarrow> rely R x y \<Longrightarrow> rely_abort R x y"
-  apply (simp add: rely_def)
-  apply (erule disjE)
-  apply (simp add: rely_abort_def)
-  apply (rule disjI1)
-  apply (erule exE)+
-  apply (erule conjE)+
-  apply (erule exE)+
-  apply (rule_tac x = z in exI)
-  apply (rule_tac x = \<sigma> in exI)
-  apply (rule_tac x = \<sigma>' in exI)
-  apply (rule_tac x = \<tau> in exI)
-  apply (rule_tac x = \<tau>' in exI)
-  apply (rule_tac x = \<tau>'' in exI)
-  apply (rule_tac x = x' in exI)
-  apply (intro conjI)
-  apply simp
-  apply (rule_tac x = y' in exI)
-  apply simp
-  apply simp
-  by (simp add: rely_abort_def)
-
-lemma rely_abort_prop: "rely_abort R x y \<longleftrightarrow> (rely R x y \<and> (lfinite x \<longleftrightarrow> lfinite y))"
-  using ra1 ra2 ra3 by blast
-
-definition Rely_abort :: "'a rel \<Rightarrow> ('a \<times> 'a) lan \<Rightarrow> ('a \<times> 'a) lan" (infixr "\<box>" 52) where
-  "R \<box> X \<equiv> {y. \<exists>x\<in>X. rely_abort R x y}"
-
-lemma mult_zero_inf: "X \<cdot> {} = {x\<in>X. \<not> lfinite x}"
-  by (auto simp add: l_prod_def)
-
-lemma "(R \<box> X) \<cdot> {} \<subseteq> R \<box> X \<cdot> {}"
-  by (auto simp add: Rely_abort_def mult_zero_inf rely_abort_prop)
-
-lemma rely_abort_leq: "R \<box> X \<subseteq> R \<rhd> X"
-  by (auto simp add: Rely_abort_def Rely_def rely_abort_prop)
-
-lemma rely_abort_l_prod: "(R \<box> X) \<cdot> (R \<box> Y) \<subseteq> R \<box> (X \<cdot> Y)"
-  apply (auto simp add: subset_iff)
-  apply (drule l_prod_elem_cases)
-  apply (erule disjE)
-  apply (simp add: Rely_abort_def)
-  apply (metis (mono_tags, lifting) UnCI l_prod_def mem_Collect_eq ra1)
-  apply (auto simp add: Rely_abort_def rely_abort_prop)
-  apply (rule_tac x = "xa \<frown> xb" in bexI)
-  using lfinite_lappend rely_l_prod2 apply blast
-  using lappend_in_l_prod apply blast
-  apply (rule_tac x = "xa \<frown> xb" in bexI)
-  using lfinite_lappend rely_l_prod2 apply blast
-  using lappend_in_l_prod apply blast
-  done
-
-lemma rely_l_prod: "(R \<rhd> X) \<cdot> (R \<rhd> Y) \<subseteq> R \<rhd> (X \<cdot> Y)"
-  sorry (* FIXME *)
-
-lemma Box1: "x \<in> R \<box> X \<Longrightarrow> lfinite x \<Longrightarrow> x \<in> R \<rhd> (X \<inter> FIN)"
-  by (auto simp add: Rely_abort_def rely_abort_prop Rely_def FIN_def)
-
-lemma Box2: "x \<in> R \<box> X \<Longrightarrow> \<not> lfinite x \<Longrightarrow> x \<in> R \<rhd> (X \<cdot> {})"
-  by (auto simp add: Rely_abort_def rely_abort_prop Rely_def mult_zero_inf)
-
-lemma Box3: "(lfinite x \<longrightarrow> x \<in> R \<rhd> (X \<inter> FIN)) \<and> (\<not> lfinite x \<longrightarrow> x \<in> R \<rhd> (X \<cdot> {})) \<Longrightarrow> x \<in> R \<box> X"
-  apply (cases "lfinite x")
-  apply auto
-  by (auto simp add: Rely_abort_def rely_abort_prop Rely_def FIN_def mult_zero_inf)
-
-lemma rely_abort_elem: "x \<in> R \<box> X \<longleftrightarrow> (lfinite x \<longrightarrow> x \<in> R \<rhd> (X \<inter> FIN)) \<and> (\<not> lfinite x \<longrightarrow> x \<in> R \<rhd> (X \<cdot> {}))"
-  using Box1 Box2 Box3 by blast
-
-lemma Rely_abort_continuous: "R \<box> \<Union>\<XX> = \<Union>{R \<box> X |X. X \<in> \<XX>}"
-  by (auto simp add: Rely_abort_def)
 
 lemma rely_l_prod_var: "(R \<rhd> X) \<cdot> Y \<subseteq> R \<rhd> (X \<cdot> Y)"
   by (metis Rely_ext l_prod_isor order_trans rely_l_prod)

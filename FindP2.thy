@@ -1,5 +1,5 @@
-theory FindP                              
-  imports Verification "~~/src/HOL/Eisbach/Eisbach"
+theory FindP2                        
+  imports Verification2 "~~/src/HOL/Eisbach/Eisbach"
 begin                              
 
 definition while_loop :: "bool_expr \<Rightarrow> program \<Rightarrow> program" ("while _ do { _ }" [51] 55) where
@@ -184,7 +184,7 @@ lemma
 
 
 lemma test_conj_split: "\<T> P \<subseteq> \<T> (Q \<otimes> S) \<longleftrightarrow> \<T> P \<subseteq> \<T> Q \<and> \<T> P \<subseteq> \<T> S"
-  apply (auto simp add: test_def Language.test_def subset_iff)
+  apply (auto simp add: test_def Language2.test_def subset_iff)
   apply (metis llast_singleton prod.inject)
   apply (metis llast_singleton prod.inject)
   done
@@ -193,19 +193,19 @@ definition "rely_A P \<equiv> {(\<sigma>, \<sigma>') |\<sigma> \<sigma>'.
   s_A \<sigma> = s_A \<sigma>'
 \<and> s_f\<^sub>A \<sigma> = s_f\<^sub>A \<sigma>'
 \<and> s_i\<^sub>A \<sigma> = s_i\<^sub>A \<sigma>'
-\<and> (((\<forall>v<s_f\<^sub>B \<sigma>'. odd v \<longrightarrow> \<not> P (s_A \<sigma>' ! v)) \<and> s_f\<^sub>B \<sigma>' < s_f\<^sub>B \<sigma> \<and> s_f\<^sub>B \<sigma>' = s_i\<^sub>B \<sigma>' \<and> s_i\<^sub>B \<sigma> = s_i\<^sub>B \<sigma>') \<or> (s_i\<^sub>B \<sigma>' < s_i\<^sub>B \<sigma> \<and> s_f\<^sub>B \<sigma> = length (s_A \<sigma>) \<longrightarrow> s_f\<^sub>B \<sigma>' = length (s_A \<sigma>')))}"
+\<and> ((P (s_A \<sigma>' ! s_f\<^sub>B \<sigma>') \<and> (\<forall>v<s_f\<^sub>B \<sigma>'. odd v \<longrightarrow> \<not> P (s_A \<sigma>' ! v)) \<and> s_f\<^sub>B \<sigma>' < s_f\<^sub>B \<sigma> \<and> s_f\<^sub>B \<sigma>' = s_i\<^sub>B \<sigma>' \<and> s_i\<^sub>B \<sigma> = s_i\<^sub>B \<sigma>') \<or> (s_i\<^sub>B \<sigma>' < s_i\<^sub>B \<sigma> \<and> s_f\<^sub>B \<sigma> = length (s_A \<sigma>) \<longrightarrow> s_f\<^sub>B \<sigma>' = length (s_A \<sigma>')))}"
 
 definition "rely_B P \<equiv> {(\<sigma>, \<sigma>') |\<sigma> \<sigma>'.
   s_A \<sigma> = s_A \<sigma>'
 \<and> s_f\<^sub>B \<sigma> = s_f\<^sub>B \<sigma>'
 \<and> s_i\<^sub>B \<sigma> = s_i\<^sub>B \<sigma>'
-\<and> (((\<forall>v<s_f\<^sub>A \<sigma>'. even v \<longrightarrow> \<not> P (s_A \<sigma>' ! v)) \<and> s_f\<^sub>A \<sigma>' < s_f\<^sub>A \<sigma> \<and> s_f\<^sub>A \<sigma>' = s_i\<^sub>A \<sigma>' \<and> s_i\<^sub>A \<sigma> = s_i\<^sub>A \<sigma>') \<or> (s_i\<^sub>A \<sigma>' < s_i\<^sub>A \<sigma> \<and> s_f\<^sub>A \<sigma> = length (s_A \<sigma>) \<longrightarrow> s_f\<^sub>A \<sigma>' = length (s_A \<sigma>')))}"
+\<and> ((P (s_A \<sigma>' ! s_f\<^sub>A \<sigma>') \<and> (\<forall>v<s_f\<^sub>A \<sigma>'. even v \<longrightarrow> \<not> P (s_A \<sigma>' ! v)) \<and> s_f\<^sub>A \<sigma>' < s_f\<^sub>A \<sigma> \<and> s_f\<^sub>A \<sigma>' = s_i\<^sub>A \<sigma>' \<and> s_i\<^sub>A \<sigma> = s_i\<^sub>A \<sigma>') \<or> (s_i\<^sub>A \<sigma>' < s_i\<^sub>A \<sigma> \<and> s_f\<^sub>A \<sigma> = length (s_A \<sigma>) \<longrightarrow> s_f\<^sub>A \<sigma>' = length (s_A \<sigma>')))}"
 
 lemma preserve_split: "X \<subseteq> \<P> P \<and> X \<subseteq> \<P> Q \<Longrightarrow> X \<subseteq> \<P> (P \<otimes> Q)"
   by (auto simp add: preserve_def subset_iff)
 
 lemma state_existence: "\<T> X \<noteq> {} \<longleftrightarrow> (\<exists>\<sigma>. eval_bool_expr X \<sigma>)"
-  by (auto simp add: test_def Language.test_def)
+  by (auto simp add: test_def Language2.test_def)
 
 lemma par_A_proof:
   shows "rely_A P,
@@ -607,7 +607,7 @@ proof -
       i\<^sub>A := Const 0;
       \<T> (Var f\<^sub>A equals ALen \<otimes> Var i\<^sub>A equals Const 0) \<rightarrow>
         (rely_A P \<rhd> \<F> \<cdot> \<T> (BNot (i\<^sub>A less than f\<^sub>A \<otimes> i\<^sub>A less than f\<^sub>B) \<otimes> invariant_A P) \<inter> guar (rely_B P))"
-      by (verify add: subset_iff preserve_def rely_A_def store.defs rely_B_def test_def Language.test_def)
+      by (verify add: subset_iff preserve_def rely_A_def store.defs rely_B_def test_def Language2.test_def)
     also have "... \<sqsubseteq>
       i\<^sub>A := Const 0;
       while (i\<^sub>A less than f\<^sub>A \<otimes> i\<^sub>A less than f\<^sub>B) do {
@@ -671,7 +671,7 @@ proof -
         }
       }"
       apply (verify add: rely_A_def preserve_def subset_iff invariant_A_def
-                         test_def Language.test_def rely_B_def store.defs)
+                         test_def Language2.test_def rely_B_def store.defs)
       by auto
     also have "... \<sqsubseteq>
       i\<^sub>A := Const 0;
@@ -683,7 +683,7 @@ proof -
         }
       }"
       apply (verify add: rely_A_def preserve_def subset_iff invariant_A_def
-                         test_def Language.test_def rely_B_def store.defs)
+                         test_def Language2.test_def rely_B_def store.defs)
       using less_Suc_eq by auto
     also have "... \<sqsubseteq> par_A P"
       by (simp add: par_A_def)
